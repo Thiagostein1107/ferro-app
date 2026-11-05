@@ -278,17 +278,12 @@ function beep() {
 function tick() {
   if (parado) return;
 
-  restante = Math.max(
-    0,
-    Math.ceil((fim - Date.now()) / 1000)
-  );
+  restante = Math.max(0, Math.ceil((fim - Date.now()) / 1000));
 
-  const display = document.getElementById('time');
-
+  const display = document.getElementById('clock');
   if (display) {
     const min = Math.floor(restante / 60);
     const seg = restante % 60;
-
     display.textContent =
       String(min).padStart(2, '0') + ':' +
       String(seg).padStart(2, '0');
@@ -296,19 +291,11 @@ function tick() {
 
   if (restante <= 0) {
     skip();
-
     beep();
-
-    if ('vibrate' in navigator) {
-      navigator.vibrate([300, 150, 300]);
-    }
+    if (navigator.vibrate) navigator.vibrate([300, 150, 300]);
   }
 }
 
-if(!parado)restante=Math.max(0,Math.ceil((fim-Date.now())/1000));
-document.getElementById('clock').textContent=String(Math.floor(restante/60)).padStart(2,'0')+':'+String(restante%60).padStart(2,'0');
-if(restante===0){clearInterval(intervalo);intervalo=null;if(navigator.vibrate)navigator.vibrate(300)}
-}
 function pause(){
 if(!parado){restante=Math.max(0,Math.ceil((fim-Date.now())/1000));clearInterval(intervalo);intervalo=null;parado=true}
 else{fim=Date.now()+restante*1000;parado=false;intervalo=setInterval(tick,250)}
