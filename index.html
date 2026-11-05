@@ -243,8 +243,63 @@ document.getElementById('timer').style.display='block';
 document.getElementById('pauseButton').textContent='Pausar';
 tick();intervalo=setInterval(tick,250);
 }
-  
+
+let audioCtx = null;
+
+function ativarAudio() {
+  try {
+    const AudioContextClass =
+      window.AudioContext || window.webkitAudioContext;
+
+    if (!AudioContextClass) return;
+
+    if (!audioCtx) {
+      audioCtx = new AudioContextClass();
+    }
+
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+  } catch (e) {
+    console.log('Áudio indisponível:', e);
+  }
+}
+
+
 function beep() {
+  try {
+    if (!audioCtx || audioCtx.state !== 'running') {
+      return;
+    }
+
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.value = 880;
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    const agora = audioCtx.currentTime;
+
+    gain.gain.setValueAtTime(0.35, agora);
+    gain.gain.exponentialRampToValueAtTime(
+      0.001, agora + 0.5
+    );
+
+    osc.start(agora);
+    osc.stop(agora + 0.5);
+
+    osc.onended = () => {
+      osc.disconnect();
+      gain.disconnect();
+    };
+  } catch (e) {
+    console.log('Erro no aviso sonoro:', e);
+  }
+}
+
   try {
     const AudioContextClass =
       window.AudioContext || window.webkitAudioContext;
