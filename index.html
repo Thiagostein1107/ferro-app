@@ -243,7 +243,68 @@ document.getElementById('timer').style.display='block';
 document.getElementById('pauseButton').textContent='Pausar';
 tick();intervalo=setInterval(tick,250);
 }
-function tick(){
+  
+function beep() {
+  try {
+    const AudioContextClass =
+      window.AudioContext || window.webkitAudioContext;
+
+    if (!AudioContextClass) return;
+
+    const ctx = new AudioContextClass();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.value = 880;
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    gain.gain.setValueAtTime(0.25, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(
+      0.001, ctx.currentTime + 0.35
+    );
+
+    osc.start();
+    osc.stop(ctx.currentTime + 0.35);
+    osc.onended = () => ctx.close();
+  } catch (e) {
+    console.log('Som indisponível:', e);
+  }
+}
+
+
+function tick() {
+  if (parado) return;
+
+  restante = Math.max(
+    0,
+    Math.ceil((fim - Date.now()) / 1000)
+  );
+
+  const display = document.getElementById('time');
+
+  if (display) {
+    const min = Math.floor(restante / 60);
+    const seg = restante % 60;
+
+    display.textContent =
+      String(min).padStart(2, '0') + ':' +
+      String(seg).padStart(2, '0');
+  }
+
+  if (restante <= 0) {
+    skip();
+
+    beep();
+
+    if ('vibrate' in navigator) {
+      navigator.vibrate([300, 150, 300]);
+    }
+  }
+}
+
 if(!parado)restante=Math.max(0,Math.ceil((fim-Date.now())/1000));
 document.getElementById('clock').textContent=String(Math.floor(restante/60)).padStart(2,'0')+':'+String(restante%60).padStart(2,'0');
 if(restante===0){clearInterval(intervalo);intervalo=null;if(navigator.vibrate)navigator.vibrate(300)}
