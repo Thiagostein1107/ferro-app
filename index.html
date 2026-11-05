@@ -38,6 +38,9 @@ nav button.on{color:#c7ff35}
 .timer{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1001;width:calc(100% - 32px);max-width:420px;text-align:center;background:#262d20;border:2px solid #c7ff35;border-radius:18px;padding:24px 18px;margin:0;box-shadow:0 0 0 100vmax rgba(0,0,0,.72)}
 .clock{font-size:55px;color:#c7ff35;font-weight:900;font-variant-numeric:tabular-nums}
 canvas{width:100%;background:#13161a;border-radius:10px}
+.unit-row{display:flex;align-items:center;gap:12px;margin-top:12px;padding-top:10px;border-top:1px solid #30343b}
+.unit-row label{margin:0;white-space:nowrap}
+.unit-row select{width:auto;flex:1;max-width:240px}
 </style>
 </head>
 <body>
@@ -112,6 +115,12 @@ db={fichas:vazio(),historico:[]};
 letras.forEach(x=>{if(!Array.isArray(db.fichas[x]))db.fichas[x]=[]});
 let ficha='A',sessao=null,restante=0,fim=0,intervalo=null,parado=false;
 function save(){localStorage.setItem('ferro2',JSON.stringify(db));render()}
+function unidade(e){return e.unidade==='lb'?'lb':'kg'}
+function alterarUnidade(i,valor){
+  if(!['kg','lb'].includes(valor))return;
+  db.fichas[ficha][i].unidade=valor;
+  save();
+}
 function safe(s){
   return String(s).replace(/[&<>"']/g, function(c){
     return {
@@ -132,7 +141,7 @@ if(id==='historico')historyView();
 function render(){
 document.getElementById('home').innerHTML=letras.map(k=>`<div class="card row"><div><b>TREINO ${k}</b><p class="muted">${db.fichas[k].length} exercícios</p></div><button onclick="start('${k}')">INICIAR</button></div>`).join('');
 document.getElementById('tabs').innerHTML=letras.map(k=>`<button class="${k===ficha?'on':''}" onclick="ficha='${k}';render()">${k}</button>`).join('');
-document.getElementById('editor').innerHTML=db.fichas[ficha].map((e,i)=>`<div class="card"><div class="row"><div><b>${safe(e.nome)}</b><p class="muted">${e.series} séries × ${e.reps} reps · ${e.descanso}s</p></div><button class="alt" onclick="edit(${i})">Editar</button><button class="red" onclick="removeEx(${i})">×</button></div></div>`).join('')+'<button class="full" onclick="edit(-1)">+ ADICIONAR EXERCÍCIO</button>';
+document.getElementById('editor').innerHTML=db.fichas[ficha].map((e,i)=>`<div class="card"><div class="row"><div><b>${safe(e.nome)}</b><p class="muted">${e.series} séries × ${e.reps} reps · ${e.descanso}s</p></div><button class="alt" onclick="edit(${i})">Editar</button><button class="red" onclick="removeEx(${i})">×</button></div><div class="unit-row"><label>Unidade de peso</label><select aria-label="Unidade de ${safe(e.nome)}" onchange="alterarUnidade(${i},this.value)"><option value="kg" ${unidade(e)==='kg'?'selected':''}>kg — quilogramas</option><option value="lb" ${unidade(e)==='lb'?'selected':''}>lb — libras</option></select></div></div>`).join('')+'<button class="full" onclick="edit(-1)">+ ADICIONAR EXERCÍCIO</button>';
 }
 function edit(i){
 let e=i<0?{nome:'',series:3,reps:12,descanso:90}:db.fichas[ficha][i];
@@ -147,7 +156,7 @@ let descanso=prompt('Descanso em segundos:',e.descanso);
 if(descanso===null)return;
 series=Number(series);reps=Number(reps);descanso=Number(descanso);
 if(!Number.isInteger(series)||series<1||series>30||!Number.isInteger(reps)||reps<1||reps>200||!Number.isFinite(descanso)||descanso<0||descanso>1800)return alert('Confira os valores informados.');
-let novo={nome,series,reps,descanso};
+let novo={nome,series,reps,descanso,unidade:unidade(e)};
 if(i<0)db.fichas[ficha].push(novo);
 else db.fichas[ficha][i]=novo;
 save();
@@ -184,7 +193,7 @@ function start(k) {
       // Procura no histórico mais recente
       for (const h of db.historico) {
         const encontrado = h.exercicios.find(
-          x => x.nome.trim().toLowerCase() === nome
+          x => x.nome.trim().toLowerCase() === nome && unidade(x) === unidade(e)
         );
 
         if (encontrado) {
@@ -215,7 +224,7 @@ function start(k) {
         }
       );
 
-      return { ...e, sets };
+      return { ...e, unidade: unidade(e), sets };
     })
   };
 
@@ -226,7 +235,7 @@ function start(k) {
 function active(){
 if(!sessao){document.getElementById('tituloTreino').textContent='Nenhum treino iniciado';document.getElementById('exerciciosAtivos').innerHTML='<p class="muted">Inicie um treino na tela inicial.</p>';return}
 document.getElementById('tituloTreino').textContent='Treino '+sessao.ficha;
-document.getElementById('exerciciosAtivos').innerHTML=sessao.exercicios.map((e,i)=>`<div class="card"><h2>${safe(e.nome)}</h2><p class="muted">Descanso: ${e.descanso}s</p><p class="muted">SÉRIE · PESO (KG) · REPS · OK</p>${e.sets.map((s,j)=>`<div class="set"><b>${j+1}</b><input type="number" min="0" step="0.5" value="${safe(s.peso)}" placeholder="kg" onchange="change(${i},${j},'peso',this.value)"><input type="number" min="1" value="${s.reps}" onchange="change(${i},${j},'reps',this.value)"><button class="${s.ok?'':'alt'}" onclick="done(${i},${j})">${s.ok?'✓':'○'}</button></div>`).join('')}</div>`).join('');
+document.getElementById('exerciciosAtivos').innerHTML=sessao.exercicios.map((e,i)=>`<div class="card"><h2>${safe(e.nome)}</h2><p class="muted">Descanso: ${e.descanso}s</p><p class="muted">SÉRIE · PESO (${unidade(e)}) · REPS · OK</p>${e.sets.map((s,j)=>`<div class="set"><b>${j+1}</b><input type="number" min="0" step="0.5" value="${safe(s.peso)}" placeholder="${unidade(e)}" onchange="change(${i},${j},'peso',this.value)"><input type="number" min="1" value="${s.reps}" onchange="change(${i},${j},'reps',this.value)"><button class="${s.ok?'':'alt'}" onclick="done(${i},${j})">${s.ok?'✓':'○'}</button></div>`).join('')}</div>`).join('');
 }
 function change(i,j,k,v){if(sessao)sessao.exercicios[i].sets[j][k]=v}
 function done(i,j){
@@ -337,18 +346,19 @@ if(!confirm('Salvar treino no histórico?'))return;
 db.historico.unshift(sessao);sessao=null;skip();save();active();page('historico');
 }
 function historyView(){
-document.getElementById('registros').innerHTML=db.historico.map(h=>`<div class="card"><b>Treino ${h.ficha}</b><p class="muted">${new Date(h.data).toLocaleString('pt-BR')}</p>${h.exercicios.map(e=>`<p class="muted">${safe(e.nome)}: ${e.sets.filter(s=>s.ok).map(s=>safe(s.peso)+' kg × '+safe(s.reps)).join(' | ')||'Sem séries concluídas'}</p>`).join('')}</div>`).join('')||'<p class="muted">Nenhum treino registrado.</p>';
-let nomes=[...new Set(db.historico.flatMap(h=>h.exercicios.map(e=>e.nome)))];
+document.getElementById('registros').innerHTML=db.historico.map(h=>`<div class="card"><b>Treino ${h.ficha}</b><p class="muted">${new Date(h.data).toLocaleString('pt-BR')}</p>${h.exercicios.map(e=>`<p class="muted">${safe(e.nome)}: ${e.sets.filter(s=>s.ok).map(s=>safe(s.peso)+' '+unidade(e)+' × '+safe(s.reps)).join(' | ')||'Sem séries concluídas'}</p>`).join('')}</div>`).join('')||'<p class="muted">Nenhum treino registrado.</p>';
+let nomes=[...new Set(db.historico.flatMap(h=>h.exercicios.map(e=>JSON.stringify([e.nome,unidade(e)]))))];
 let sel=document.getElementById('chartSelect'),old=sel.value;
-sel.innerHTML=nomes.map(n=>`<option value="${safe(n)}">${safe(n)}</option>`).join('');
+sel.innerHTML=nomes.map(n=>{let [nome,u]=JSON.parse(n);return `<option value="${safe(n)}">${safe(nome)} (${u})</option>`}).join('');
 if(nomes.includes(old))sel.value=old;
 chart();
 }
 function chart(){
-let c=document.getElementById('grafico'),ctx=c.getContext('2d'),nome=document.getElementById('chartSelect').value;
+let c=document.getElementById('grafico'),ctx=c.getContext('2d'),escolha=document.getElementById('chartSelect').value;
+let [nome,u]=escolha?JSON.parse(escolha):['','kg'];
 ctx.clearRect(0,0,600,260);
 let pts=[];
-db.historico.slice().reverse().forEach(h=>h.exercicios.filter(e=>e.nome===nome).forEach(e=>{
+db.historico.slice().reverse().forEach(h=>h.exercicios.filter(e=>e.nome===nome&&unidade(e)===u).forEach(e=>{
 let cargas=e.sets.filter(s=>s.ok&&s.peso!==''&&Number.isFinite(Number(s.peso))).map(s=>Number(s.peso));
 if(cargas.length)pts.push(Math.max(...cargas));
 }));
@@ -360,7 +370,7 @@ for(let i=0;i<4;i++){let y=25+i*60;ctx.beginPath();ctx.moveTo(48,y);ctx.lineTo(5
 ctx.beginPath();ctx.strokeStyle='#c7ff35';ctx.lineWidth=3;
 pts.forEach((v,i)=>{let x=48+(pts.length===1?260:i*530/(pts.length-1)),y=205-(v-min)/(max-min)*180;i?ctx.lineTo(x,y):ctx.moveTo(x,y)});
 ctx.stroke();
-document.getElementById('chartInfo').textContent=pts.length+' sessões com carga registrada · peso máximo por sessão (kg)';
+document.getElementById('chartInfo').textContent=pts.length+' sessões com carga registrada · peso máximo por sessão ('+u+')';
 }
 function backup(){
 let blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
