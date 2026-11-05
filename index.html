@@ -2,36 +2,238 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1.0">
-  <title>FERRO 2.0</title>
-  <style>
-    body {
-      background: #101114;
-      color: white;
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 40px 20px;
-    }
-    h1 { color: #c7ff35; }
-    button {
-      background: #c7ff35;
-      color: #101114;
-      border: none;
-      border-radius: 12px;
-      padding: 15px 25px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FERRO 2.0</title>
+<meta name="theme-color" content="#101114">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101114;color:#f5f5f5;font:15px Arial,sans-serif;padding:18px 15px 90px}
+main{max-width:650px;margin:auto}
+h1{font-size:28px;margin:8px 0 20px}
+h2{font-size:19px}
+.logo{font-size:23px;font-weight:900;letter-spacing:3px;color:#c7ff35}
+.muted{color:#a2a7b0;font-size:13px}
+.card{background:#1d2025;border:1px solid #30343b;border-radius:15px;padding:16px;margin:12px 0}
+button{background:#c7ff35;color:#101114;border:0;border-radius:10px;padding:12px;font-weight:bold;cursor:pointer}
+button.alt{background:#30343b;color:white}
+button.red{background:#50282b;color:#ffb3b3}
+button:disabled{opacity:.4}
+input,select{width:100%;background:#111318;color:white;border:1px solid #41454d;border-radius:8px;padding:11px;font-size:15px}
+label{display:block;font-size:12px;color:#a2a7b0;margin:10px 0 5px}
+.row{display:flex;gap:9px;align-items:center;justify-content:space-between}
+.row>*{min-width:0}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.tabs button{background:#292c32;color:white}
+.tabs button.on{background:#c7ff35;color:#111}
+nav{position:fixed;bottom:0;left:0;right:0;background:#17191d;border-top:1px solid #34383f;display:flex;padding:10px}
+nav button{flex:1;background:transparent;color:#aaa;padding:10px 3px;font-size:12px}
+nav button.on{color:#c7ff35}
+.page{display:none}.page.on{display:block}
+.full{width:100%}
+.set{display:grid;grid-template-columns:30px 1fr 1fr 42px;gap:6px;align-items:center;margin:8px 0}
+.set input{text-align:center;padding:9px}
+.set button{padding:10px}
+.timer{text-align:center;background:#262d20;border-radius:16px;padding:20px;margin:14px 0}
+.clock{font-size:55px;color:#c7ff35;font-weight:900;font-variant-numeric:tabular-nums}
+canvas{width:100%;background:#13161a;border-radius:10px}
+</style>
 </head>
 <body>
-  <h1>FERRO 2.0</h1>
-  <h2>Meu aplicativo de academia</h2>
-  <p>Treinos A, B, C, D e E</p>
-  <button onclick="alert('FERRO funcionando!')">
-    INICIAR TREINO
-  </button>
+<main>
+<div class="logo">FERRO.</div>
+<p class="muted">SEU TREINO. SUA EVOLUÇÃO.</p>
+
+<section id="inicio" class="page on">
+<h1>Vamos treinar!</h1>
+<div class="card">
+<h2>Minhas fichas</h2>
+<div id="home"></div>
+</div>
+<div class="card">
+<h2>Backup dos dados</h2>
+<p class="muted">Salve suas fichas e histórico em um arquivo.</p>
+<button onclick="backup()">Exportar backup</button>
+<button class="alt" onclick="document.getElementById('file').click()">Restaurar</button>
+<input type="file" id="file" accept=".json" style="display:none" onchange="restore(event)">
+</div>
+</section>
+
+<section id="fichas" class="page">
+<h1>Minhas fichas</h1>
+<div class="tabs" id="tabs"></div>
+<div id="editor"></div>
+</section>
+
+<section id="treinar" class="page">
+<h1 id="tituloTreino">Treino</h1>
+<div id="exerciciosAtivos"></div>
+<div id="timer" class="timer" style="display:none">
+<p>DESCANSO ENTRE SÉRIES</p>
+<div id="clock" class="clock">01:30</div>
+<div class="row">
+<button class="alt" onclick="addTime()">+15s</button>
+<button onclick="skip()">Pular</button>
+<button class="alt" onclick="pause()" id="pauseButton">Pausar</button>
+</div>
+</div>
+<button class="full" onclick="finish()">FINALIZAR TREINO</button>
+</section>
+
+<section id="historico" class="page">
+<h1>Minha evolução</h1>
+<div class="card">
+<label>Escolha um exercício</label>
+<select id="chartSelect" onchange="chart()"></select>
+<canvas id="grafico" width="600" height="260"></canvas>
+<p id="chartInfo" class="muted"></p>
+</div>
+<h2>Treinos anteriores</h2>
+<div id="registros"></div>
+</section>
+
+<nav>
+<button class="on" onclick="page('inicio')">INÍCIO</button>
+<button onclick="page('fichas')">FICHAS</button>
+<button onclick="page('treinar')">TREINAR</button>
+<button onclick="page('historico')">EVOLUÇÃO</button>
+</nav>
+</main>
+
+<script>
+const letras=['A','B','C','D','E'];
+const vazio=()=>Object.fromEntries(letras.map(x=>[x,[]]));
+let db;
+try{db=JSON.parse(localStorage.getItem('ferro2'))}
+catch(e){}
+if(!db||!db.fichas||!Array.isArray(db.historico))
+db={fichas:vazio(),historico:[]};
+letras.forEach(x=>{if(!Array.isArray(db.fichas[x]))db.fichas[x]=[]});
+let ficha='A',sessao=null,restante=0,fim=0,intervalo=null,parado=false;
+function save(){localStorage.setItem('ferro2',JSON.stringify(db));render()}
+function safe(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;':'&quot;',"'":'&#39;'}[c]))}
+function page(id){
+document.querySelectorAll('.page').forEach(e=>e.classList.toggle('on',e.id===id));
+document.querySelectorAll('nav button').forEach((b,i)=>b.classList.toggle('on',['inicio','fichas','treinar','historico'][i]===id));
+if(id==='historico')historyView();
+}
+function render(){
+document.getElementById('home').innerHTML=letras.map(k=>`<div class="card row"><div><b>TREINO ${k}</b><p class="muted">${db.fichas[k].length} exercícios</p></div><button onclick="start('${k}')">INICIAR</button></div>`).join('');
+document.getElementById('tabs').innerHTML=letras.map(k=>`<button class="${k===ficha?'on':''}" onclick="ficha='${k}';render()">${k}</button>`).join('');
+document.getElementById('editor').innerHTML=db.fichas[ficha].map((e,i)=>`<div class="card"><div class="row"><div><b>${safe(e.nome)}</b><p class="muted">${e.series} séries × ${e.reps} reps · ${e.descanso}s</p></div><button class="alt" onclick="edit(${i})">Editar</button><button class="red" onclick="removeEx(${i})">×</button></div></div>`).join('')+'<button class="full" onclick="edit(-1)">+ ADICIONAR EXERCÍCIO</button>';
+}
+function edit(i){
+let e=i<0?{nome:'',series:3,reps:12,descanso:90}:db.fichas[ficha][i];
+let nome=prompt('Nome do exercício:',e.nome);
+if(nome===null)return;
+nome=nome.trim();if(!nome)return alert('Informe o nome.');
+let series=prompt('Número de séries:',e.series);
+if(series===null)return;
+let reps=prompt('Repetições por série:',e.reps);
+if(reps===null)return;
+let descanso=prompt('Descanso em segundos:',e.descanso);
+if(descanso===null)return;
+series=Number(series);reps=Number(reps);descanso=Number(descanso);
+if(!Number.isInteger(series)||series<1||series>30||!Number.isInteger(reps)||reps<1||reps>200||!Number.isFinite(descanso)||descanso<0||descanso>1800)return alert('Confira os valores informados.');
+let novo={nome,series,reps,descanso};
+if(i<0)db.fichas[ficha].push(novo);
+else db.fichas[ficha][i]=novo;
+save();
+}
+function removeEx(i){
+if(confirm('Excluir este exercício?')){db.fichas[ficha].splice(i,1);save()}
+}
+function start(k){
+if(sessao&&!confirm('Substituir o treino em andamento?'))return;
+if(!db.fichas[k].length){alert('Cadastre exercícios na ficha '+k+' primeiro.');page('fichas');ficha=k;render();return}
+skip();
+sessao={ficha:k,data:new Date().toISOString(),exercicios:db.fichas[k].map(e=>({...e,sets:Array.from({length:e.series},()=>({peso:'',reps:e.reps,ok:false}))}))};
+active();page('treinar');
+}
+function active(){
+if(!sessao){document.getElementById('tituloTreino').textContent='Nenhum treino iniciado';document.getElementById('exerciciosAtivos').innerHTML='<p class="muted">Inicie um treino na tela inicial.</p>';return}
+document.getElementById('tituloTreino').textContent='Treino '+sessao.ficha;
+document.getElementById('exerciciosAtivos').innerHTML=sessao.exercicios.map((e,i)=>`<div class="card"><h2>${safe(e.nome)}</h2><p class="muted">Descanso: ${e.descanso}s</p><p class="muted">SÉRIE · PESO (KG) · REPS · OK</p>${e.sets.map((s,j)=>`<div class="set"><b>${j+1}</b><input type="number" min="0" step="0.5" value="${safe(s.peso)}" placeholder="kg" onchange="change(${i},${j},'peso',this.value)"><input type="number" min="1" value="${s.reps}" onchange="change(${i},${j},'reps',this.value)"><button class="${s.ok?'':'alt'}" onclick="done(${i},${j})">${s.ok?'✓':'○'}</button></div>`).join('')}</div>`).join('');
+}
+function change(i,j,k,v){if(sessao)sessao.exercicios[i].sets[j][k]=v}
+function done(i,j){
+let s=sessao.exercicios[i].sets[j];
+if(s.ok)return;
+if(!Number.isFinite(Number(s.reps))||Number(s.reps)<1)return alert('Informe repetições válidas.');
+s.ok=true;
+let e=sessao.exercicios[i];
+active();
+let ultimo=i===sessao.exercicios.length-1&&j===e.sets.length-1;
+if(!ultimo&&e.descanso>0)timerStart(e.descanso);
+}
+function timerStart(t){
+clearInterval(intervalo);restante=t;fim=Date.now()+t*1000;parado=false;
+document.getElementById('timer').style.display='block';
+document.getElementById('pauseButton').textContent='Pausar';
+tick();intervalo=setInterval(tick,250);
+}
+function tick(){
+if(!parado)restante=Math.max(0,Math.ceil((fim-Date.now())/1000));
+document.getElementById('clock').textContent=String(Math.floor(restante/60)).padStart(2,'0')+':'+String(restante%60).padStart(2,'0');
+if(restante===0){clearInterval(intervalo);intervalo=null;if(navigator.vibrate)navigator.vibrate(300)}
+}
+function pause(){
+if(!parado){restante=Math.max(0,Math.ceil((fim-Date.now())/1000));clearInterval(intervalo);intervalo=null;parado=true}
+else{fim=Date.now()+restante*1000;parado=false;intervalo=setInterval(tick,250)}
+document.getElementById('pauseButton').textContent=parado?'Retomar':'Pausar';
+}
+function addTime(){restante+=15;if(!parado){fim=Date.now()+restante*1000;if(!intervalo)intervalo=setInterval(tick,250)}tick()}
+function skip(){clearInterval(intervalo);intervalo=null;document.getElementById('timer').style.display='none'}
+function finish(){
+if(!sessao)return alert('Nenhum treino em andamento.');
+if(!confirm('Salvar treino no histórico?'))return;
+db.historico.unshift(sessao);sessao=null;skip();save();active();page('historico');
+}
+function historyView(){
+document.getElementById('registros').innerHTML=db.historico.map(h=>`<div class="card"><b>Treino ${h.ficha}</b><p class="muted">${new Date(h.data).toLocaleString('pt-BR')}</p>${h.exercicios.map(e=>`<p class="muted">${safe(e.nome)}: ${e.sets.filter(s=>s.ok).map(s=>safe(s.peso)+' kg × '+safe(s.reps)).join(' | ')||'Sem séries concluídas'}</p>`).join('')}</div>`).join('')||'<p class="muted">Nenhum treino registrado.</p>';
+let nomes=[...new Set(db.historico.flatMap(h=>h.exercicios.map(e=>e.nome)))];
+let sel=document.getElementById('chartSelect'),old=sel.value;
+sel.innerHTML=nomes.map(n=>`<option value="${safe(n)}">${safe(n)}</option>`).join('');
+if(nomes.includes(old))sel.value=old;
+chart();
+}
+function chart(){
+let c=document.getElementById('grafico'),ctx=c.getContext('2d'),nome=document.getElementById('chartSelect').value;
+ctx.clearRect(0,0,600,260);
+let pts=[];
+db.historico.slice().reverse().forEach(h=>h.exercicios.filter(e=>e.nome===nome).forEach(e=>{
+let cargas=e.sets.filter(s=>s.ok&&s.peso!==''&&Number.isFinite(Number(s.peso))).map(s=>Number(s.peso));
+if(cargas.length)pts.push(Math.max(...cargas));
+}));
+if(!pts.length){document.getElementById('chartInfo').textContent='Registre pesos para visualizar a evolução.';return}
+let min=Math.min(...pts),max=Math.max(...pts);
+if(max===min){min=Math.max(0,min-1);max+=1}
+ctx.strokeStyle='#42474f';ctx.fillStyle='#aab0b9';ctx.font='13px Arial';
+for(let i=0;i<4;i++){let y=25+i*60;ctx.beginPath();ctx.moveTo(48,y);ctx.lineTo(580,y);ctx.stroke();ctx.fillText((max-(max-min)*i/3).toFixed(1),4,y+4)}
+ctx.beginPath();ctx.strokeStyle='#c7ff35';ctx.lineWidth=3;
+pts.forEach((v,i)=>{let x=48+(pts.length===1?260:i*530/(pts.length-1)),y=205-(v-min)/(max-min)*180;i?ctx.lineTo(x,y):ctx.moveTo(x,y)});
+ctx.stroke();
+document.getElementById('chartInfo').textContent=pts.length+' sessões com carga registrada · peso máximo por sessão (kg)';
+}
+function backup(){
+let blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
+let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ferro-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+function restore(ev){
+let f=ev.target.files[0];if(!f)return;
+let r=new FileReader();
+r.onload=()=>{
+try{
+let d=JSON.parse(r.result);
+if(!d.fichas||!Array.isArray(d.historico)||!letras.every(k=>Array.isArray(d.fichas[k])))throw Error('Arquivo inválido');
+if(confirm('Substituir seus dados atuais pelo backup?')){db=d;sessao=null;skip();save();active();page('inicio');alert('Backup restaurado!')}
+}catch(e){alert('Não foi possível restaurar o backup.')}
+ev.target.value='';
+};
+r.readAsText(f);
+}
+render();active();
+</script>
 </body>
 </html>
