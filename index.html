@@ -155,68 +155,72 @@ save();
 function removeEx(i){
 if(confirm('Excluir este exercício?')){db.fichas[ficha].splice(i,1);save()}
 }
+function start(k) {
+  if (sessao && !confirm(
+    'Substituir o treino em andamento?'
+  )) return;
 
-function beep(){
-  try{
-    const AudioCtx =
-      window.AudioContext ||
-      window.webkitAudioContext;
-
-    if(!AudioCtx)return;
-
-    const ctx=new AudioCtx();
-    const osc=ctx.createOscillator();
-    const gain=ctx.createGain();
-
-    osc.type='sine';
-    osc.frequency.value=880;
-
-    gain.gain.setValueAtTime(
-      0.2,ctx.currentTime
-    );
-
-    gain.gain.exponentialRampToValueAtTime(
-      0.001,ctx.currentTime+0.35
-    );
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-
-    osc.start();
-    osc.stop(ctx.currentTime+0.35);
-
-    osc.onended=()=>ctx.close();
-  }catch(e){
-    console.log('Áudio indisponível');
+  if (!db.fichas[k].length) {
+    alert('Cadastre exercícios primeiro.');
+    ficha = k;
+    render();
+    page('fichas');
+    return;
   }
+
+  skip();
+
+  sessao = {
+    ficha: k,
+    data: new Date().toISOString(),
+    exercicios: db.fichas[k].map(e => {
+
+      const nome = e.nome.trim().toLowerCase();
+
+      let anterior = null;
+
+      // Procura no histórico mais recente
+      for (const h of db.historico) {
+        const encontrado = h.exercicios.find(
+          x => x.nome.trim().toLowerCase() === nome
+        );
+
+        if (encontrado) {
+          anterior = encontrado;
+          break;
+        }
+      }
+
+      // Recupera apenas séries concluídas
+      const validas = anterior
+        ? anterior.sets.filter(s => s.ok)
+        : [];
+
+      const sets = Array.from(
+        { length: e.series },
+        (_, i) => {
+
+          // Usa a série correspondente ou
+          // a última série concluída
+          const antiga = validas[i] ||
+            validas[validas.length - 1];
+
+          return {
+            peso: antiga?.peso ?? '',
+            reps: antiga?.reps ?? e.reps,
+            ok: false
+          };
+        }
+      );
+
+      return { ...e, sets };
+    })
+  };
+
+  active();
+  page('treinar');
 }
 
-function tick(){
-  if(!parado){
-    restante=Math.max(
-      0,
-      Math.ceil((fim-Date.now())/1000)
-    );
-  }
-
-  document.getElementById('clock')
-    .textContent=
-      String(Math.floor(restante/60))
-        .padStart(2,'0')
-      +':'+
-      String(restante%60).padStart(2,'0');
-
-  if(restante===0 && intervalo!==null){
-    clearInterval(intervalo);
-    intervalo=null;
-
-    beep();
-
-    if(navigator.vibrate){
-      navigator.vibrate([300,150,300]);
-    }
-  }
-}
 function active(){
 if(!sessao){document.getElementById('tituloTreino').textContent='Nenhum treino iniciado';document.getElementById('exerciciosAtivos').innerHTML='<p class="muted">Inicie um treino na tela inicial.</p>';return}
 document.getElementById('tituloTreino').textContent='Treino '+sessao.ficha;
