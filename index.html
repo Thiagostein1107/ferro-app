@@ -30,7 +30,7 @@ input:focus,select:focus{border-color:var(--lime)}
 label{display:block;font-size:11px;color:var(--muted);margin:12px 0 7px;font-weight:800;letter-spacing:.55px;text-transform:uppercase}
 .row{display:flex;gap:10px;align-items:center;justify-content:space-between}.row>*{min-width:0}
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;background:#151b20;border:1px solid var(--border);border-radius:16px;padding:7px;margin:14px 0 20px}
+.tabs{display:grid;grid-template-columns:repeat(auto-fit,minmax(52px,1fr));gap:8px;background:#151b20;border:1px solid var(--border);border-radius:16px;padding:7px;margin:14px 0 20px}
 .tabs button{background:transparent;color:#9da9b1;padding:10px 4px;border-radius:10px}
 .tabs button.on{background:var(--lime);color:#12170c;box-shadow:0 4px 14px rgba(199,255,53,.12)}
 nav{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);width:calc(100% - 28px);max-width:720px;background:rgba(23,29,34,.96);border:1px solid #39434b;box-shadow:0 12px 35px rgba(0,0,0,.48);display:flex;gap:4px;padding:7px;border-radius:19px;z-index:100;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
@@ -80,6 +80,7 @@ canvas{display:block;width:100%;height:auto;background:#10161b;border:1px solid 
 
 <section id="fichas" class="page">
 <h1>Minhas fichas</h1>
+<div class="card"><label for="quantidadeFichas">Quantas fichas de treino deseja utilizar?</label><select id="quantidadeFichas" onchange="alterarQuantidadeFichas(this.value)"></select><p class="muted">De 1 a 20 fichas. Diminuir a quantidade apenas oculta as demais, sem apagar os exercícios.</p></div>
 <div class="tabs" id="tabs"></div>
 <div id="editor"></div>
 </section>
@@ -120,7 +121,8 @@ canvas{display:block;width:100%;height:auto;background:#10161b;border:1px solid 
 </main>
 
 <script>
-const letras=['A','B','C','D','E'];
+const letras=Array.from({length:20},(_,i)=>String.fromCharCode(65+i));
+const fichasVisiveis=()=>letras.slice(0,db.quantidadeFichas);
 const vazio=()=>Object.fromEntries(letras.map(x=>[x,[]]));
 let db;
 try{db=JSON.parse(localStorage.getItem('ferro2'))}
@@ -128,6 +130,7 @@ catch(e){}
 if(!db||!db.fichas||!Array.isArray(db.historico))
 db={fichas:vazio(),historico:[]};
 letras.forEach(x=>{if(!Array.isArray(db.fichas[x]))db.fichas[x]=[]});
+if(!Number.isInteger(db.quantidadeFichas)||db.quantidadeFichas<1||db.quantidadeFichas>20)db.quantidadeFichas=5;
 let ficha='A',sessao=null,restante=0,fim=0,intervalo=null,parado=false;
 function save(){localStorage.setItem('ferro2',JSON.stringify(db));render()}
 function unidade(e){return e.unidade==='lb'?'lb':'kg'}
@@ -153,9 +156,17 @@ document.querySelectorAll('.page').forEach(e=>e.classList.toggle('on',e.id===id)
 document.querySelectorAll('nav button').forEach((b,i)=>b.classList.toggle('on',['inicio','fichas','treinar','historico'][i]===id));
 if(id==='historico')historyView();
 }
+function alterarQuantidadeFichas(valor){
+const n=Number(valor);
+if(!Number.isInteger(n)||n<1||n>20)return;
+db.quantidadeFichas=n;
+if(!fichasVisiveis().includes(ficha))ficha='A';
+save();
+}
 function render(){
-document.getElementById('home').innerHTML=letras.map(k=>`<div class="card row"><div><b>TREINO ${k}</b><p class="muted">${db.fichas[k].length} exercícios</p></div><button onclick="start('${k}')">INICIAR</button></div>`).join('');
-document.getElementById('tabs').innerHTML=letras.map(k=>`<button class="${k===ficha?'on':''}" onclick="ficha='${k}';render()">${k}</button>`).join('');
+document.getElementById('quantidadeFichas').innerHTML=Array.from({length:20},(_,i)=>`<option value="${i+1}" ${db.quantidadeFichas===i+1?'selected':''}>${i+1} ${i===0?'ficha':'fichas'}</option>`).join('');
+document.getElementById('home').innerHTML=fichasVisiveis().map(k=>`<div class="card row"><div><b>TREINO ${k}</b><p class="muted">${db.fichas[k].length} exercícios</p></div><button onclick="start('${k}')">INICIAR</button></div>`).join('');
+document.getElementById('tabs').innerHTML=fichasVisiveis().map(k=>`<button class="${k===ficha?'on':''}" onclick="ficha='${k}';render()">${k}</button>`).join('');
 document.getElementById('editor').innerHTML=db.fichas[ficha].map((e,i)=>`<div class="card"><div class="row"><div><b>${safe(e.nome)}</b><p class="muted">${e.series} séries × ${e.reps} reps · ${e.descanso}s</p></div><button class="alt" onclick="edit(${i})">Editar</button><button class="red" onclick="removeEx(${i})">×</button></div><div class="unit-row"><label>Unidade de peso</label><select aria-label="Unidade de ${safe(e.nome)}" onchange="alterarUnidade(${i},this.value)"><option value="kg" ${unidade(e)==='kg'?'selected':''}>kg — quilogramas</option><option value="lb" ${unidade(e)==='lb'?'selected':''}>lb — libras</option></select></div></div>`).join('')+'<button class="full" onclick="edit(-1)">+ ADICIONAR EXERCÍCIO</button>';
 }
 function edit(i){
@@ -397,7 +408,9 @@ let r=new FileReader();
 r.onload=()=>{
 try{
 let d=JSON.parse(r.result);
-if(!d.fichas||!Array.isArray(d.historico)||!letras.every(k=>Array.isArray(d.fichas[k])))throw Error('Arquivo inválido');
+if(!d.fichas||!Array.isArray(d.historico)||!['A','B','C','D','E'].every(k=>Array.isArray(d.fichas[k])))throw Error('Arquivo inválido');
+letras.forEach(k=>{if(!Array.isArray(d.fichas[k]))d.fichas[k]=[]});
+if(!Number.isInteger(d.quantidadeFichas)||d.quantidadeFichas<1||d.quantidadeFichas>20)d.quantidadeFichas=5;
 if(confirm('Substituir seus dados atuais pelo backup?')){db=d;sessao=null;skip();save();active();page('inicio');alert('Backup restaurado!')}
 }catch(e){alert('Não foi possível restaurar o backup.')}
 ev.target.value='';
