@@ -112,7 +112,18 @@ db={fichas:vazio(),historico:[]};
 letras.forEach(x=>{if(!Array.isArray(db.fichas[x]))db.fichas[x]=[]});
 let ficha='A',sessao=null,restante=0,fim=0,intervalo=null,parado=false;
 function save(){localStorage.setItem('ferro2',JSON.stringify(db));render()}
-function safe(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;':'&quot;',"'":'&#39;'}[c]))}
+function safe(s){
+  return String(s).replace(/[&<>"']/g, function(c){
+    return {
+      '&':'&amp;',
+      '<':'&lt;',
+      '>':'&gt;',
+      '"':'&quot;',
+      "'":'&#39;'
+    }[c];
+  });
+}
+
 function page(id){
 document.querySelectorAll('.page').forEach(e=>e.classList.toggle('on',e.id===id));
 document.querySelectorAll('nav button').forEach((b,i)=>b.classList.toggle('on',['inicio','fichas','treinar','historico'][i]===id));
