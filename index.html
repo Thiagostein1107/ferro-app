@@ -35,7 +35,7 @@ nav button.on{color:#c7ff35}
 .set{display:grid;grid-template-columns:30px 1fr 1fr 42px;gap:6px;align-items:center;margin:8px 0}
 .set input{text-align:center;padding:9px}
 .set button{padding:10px}
-.timer{text-align:center;background:#262d20;border-radius:16px;padding:20px;margin:14px 0}
+.timer{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1001;width:calc(100% - 32px);max-width:420px;text-align:center;background:#262d20;border:2px solid #c7ff35;border-radius:18px;padding:24px 18px;margin:0;box-shadow:0 0 0 100vmax rgba(0,0,0,.72)}
 .clock{font-size:55px;color:#c7ff35;font-weight:900;font-variant-numeric:tabular-nums}
 canvas{width:100%;background:#13161a;border-radius:10px}
 </style>
@@ -158,9 +158,6 @@ if(confirm('Excluir este exercício?')){db.fichas[ficha].splice(i,1);save()}
 function start(k) {
   ativarAudio();
 
-  if (sessao && !confirm(
-    'Substituir o treino em andamento?'
-  )) return;
   if (sessao && !confirm(
     'Substituir o treino em andamento?'
   )) return;
@@ -302,35 +299,6 @@ function beep() {
     };
   } catch (e) {
     console.log('Erro no aviso sonoro:', e);
-  }
-}
-
-  try {
-    const AudioContextClass =
-      window.AudioContext || window.webkitAudioContext;
-
-    if (!AudioContextClass) return;
-
-    const ctx = new AudioContextClass();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = 'sine';
-    osc.frequency.value = 880;
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-
-    gain.gain.setValueAtTime(0.25, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(
-      0.001, ctx.currentTime + 0.35
-    );
-
-    osc.start();
-    osc.stop(ctx.currentTime + 0.35);
-    osc.onended = () => ctx.close();
-  } catch (e) {
-    console.log('Som indisponível:', e);
   }
 }
 
