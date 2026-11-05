@@ -156,6 +156,11 @@ function removeEx(i){
 if(confirm('Excluir este exercício?')){db.fichas[ficha].splice(i,1);save()}
 }
 function start(k) {
+  ativarAudio();
+
+  if (sessao && !confirm(
+    'Substituir o treino em andamento?'
+  )) return;
   if (sessao && !confirm(
     'Substituir o treino em andamento?'
   )) return;
