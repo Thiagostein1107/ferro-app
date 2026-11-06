@@ -54,7 +54,7 @@ canvas{display:block;width:100%;height:auto;background:#10161b;border:1px solid 
 #home>.card b{font-size:15px;letter-spacing:.5px}#home>.card .muted{margin:5px 0 0}
 #editor>.card .row{flex-wrap:wrap}#editor>.card .row>div:first-child{flex:1 1 165px}#editor>.card .row>button{flex:0 0 auto}
 #exerciciosAtivos>.card h2{font-size:19px;margin-bottom:7px}#exerciciosAtivos>.card>p{margin:4px 0}
-#registros>.card{padding:18px 20px}#registros>.card>b{color:var(--lime)}
+.progressao{border:1px solid rgba(199,255,53,.5);background:linear-gradient(135deg,rgba(47,65,30,.95),rgba(25,37,29,.96));border-radius:14px;padding:13px 15px;margin:12px 0}.progressao b{color:var(--lime)}.progressao p{margin:5px 0 0;font-size:13px;color:#e2ebda}.progressao small{display:block;margin-top:5px;color:#b7c7ae}#registros>.card{padding:18px 20px}#registros>.card>b{color:var(--lime)}
 @media(max-width:430px){body{padding:22px 13px 110px}.card{padding:16px;border-radius:17px}h1{margin:23px 0 17px}.row{gap:7px}#inicio>.card>button{margin:4px 4px 4px 0}#home>.card{padding:13px}#home>.card button{padding:10px 12px}.set{gap:5px;grid-template-columns:22px minmax(0,1fr) minmax(0,1fr) 41px}.set input{padding:9px 3px}nav{bottom:9px;width:calc(100% - 18px)}nav button{font-size:10px;padding:11px 2px}.unit-row{gap:8px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
@@ -109,7 +109,7 @@ canvas{display:block;width:100%;height:auto;background:#10161b;border:1px solid 
 <canvas id="grafico" width="600" height="260"></canvas>
 <p id="chartInfo" class="muted"></p>
 </div>
-<h2>Treinos anteriores</h2>
+<div id="resumoProgressao"></div><h2>Treinos anteriores</h2>
 <div id="registros"></div>
 </section>
 
@@ -145,6 +145,33 @@ function faixaReps(valor){
 }
 function metaReps(e){return faixaReps(e.reps)?.texto||'12'}
 function repsIniciais(e){return faixaReps(e.reps)?.min||12}
+// Recomenda progressão somente quando TODAS as séries previstas foram
+// concluídas no limite superior, usando a mesma carga positiva.
+function podeProgredir(e){
+  const faixa=faixaReps(e.reps);
+  if(!faixa||faixa.min===faixa.max||!Number.isInteger(Number(e.series))||Number(e.series)<1)return false;
+  if(!Array.isArray(e.sets)||e.sets.length!==Number(e.series))return false;
+  const pesos=e.sets.map(s=>Number(s.peso));
+  return e.sets.every((s,i)=>s.ok===true &&
+    String(s.peso).trim()!=='' &&
+    Number.isFinite(pesos[i]) && pesos[i]>0 &&
+    Number.isInteger(Number(s.reps)) && Number(s.reps)>=faixa.max &&
+    pesos[i]===pesos[0]);
+}
+function treinoAnterior(nome,u){
+  for(const h of db.historico){
+    if(!Array.isArray(h.exercicios))continue;
+    const encontrado=h.exercicios.find(x=>
+      String(x.nome).trim().toLowerCase()===String(nome).trim().toLowerCase() &&
+      unidade(x)===u);
+    if(encontrado)return encontrado;
+  }
+  return null;
+}
+function avisoProgressao(e,proximo=false){
+  const carga=e.sets[0].peso;
+  return `<div class="progressao" role="status"><b>↗ ${proximo?'Progressão sugerida para hoje':'Meta atingida! Considere progredir'}</b><p>${proximo?'No último treino, você atingiu o topo da faixa em todas as séries com '+safe(carga)+' '+unidade(e)+'.':'Você atingiu o topo da faixa ('+metaReps(e)+' reps) em todas as séries com '+safe(carga)+' '+unidade(e)+'.'}</p><small>Considere aumentar a carga${proximo?' neste treino':' no próximo treino'}. Você escolhe quanto. Nenhum peso é alterado automaticamente.</small></div>`;
+}
 function alterarUnidade(i,valor){
   if(!['kg','lb'].includes(valor))return;
   db.fichas[ficha][i].unidade=valor;
@@ -165,7 +192,7 @@ function safe(s){
 function page(id){
 document.querySelectorAll('.page').forEach(e=>e.classList.toggle('on',e.id===id));
 document.querySelectorAll('nav button').forEach((b,i)=>b.classList.toggle('on',['inicio','fichas','treinar','historico'][i]===id));
-if(id==='historico')historyView();
+if(id==='historico'){document.getElementById('resumoProgressao').innerHTML='';historyView();}
 }
 function alterarQuantidadeFichas(valor){
 const n=Number(valor);
@@ -240,6 +267,8 @@ function start(k) {
       }
 
       // Recupera apenas séries concluídas
+      const sugestaoProgressao = !!anterior && podeProgredir(anterior) &&
+        metaReps(anterior)===metaReps(e) && Number(anterior.series)===Number(e.series);
       const validas = anterior
         ? anterior.sets.filter(s => s.ok)
         : [];
@@ -261,7 +290,7 @@ function start(k) {
         }
       );
 
-      return { ...e, unidade: unidade(e), sets };
+      return { ...e, unidade: unidade(e), sets, sugestaoProgressao, cargaAnterior: sugestaoProgressao ? anterior.sets[0].peso : null };
     })
   };
 
@@ -272,7 +301,7 @@ function start(k) {
 function active(){
 if(!sessao){document.getElementById('tituloTreino').textContent='Nenhum treino iniciado';document.getElementById('exerciciosAtivos').innerHTML='<p class="muted">Inicie um treino na tela inicial.</p>';return}
 document.getElementById('tituloTreino').textContent='Treino '+sessao.ficha;
-document.getElementById('exerciciosAtivos').innerHTML=sessao.exercicios.map((e,i)=>`<div class="card"><h2>${safe(e.nome)}</h2><p class="muted">Meta: ${e.series} × ${metaReps(e)} reps · Descanso: ${e.descanso}s</p><p class="muted">SÉRIE · PESO (${unidade(e)}) · REPS · OK</p>${e.sets.map((s,j)=>`<div class="set"><b>${j+1}</b><input type="number" min="0" step="0.5" value="${safe(s.peso)}" placeholder="${unidade(e)}" onchange="change(${i},${j},'peso',this.value)"><input type="number" min="1" value="${s.reps}" onchange="change(${i},${j},'reps',this.value)"><button class="${s.ok?'':'alt'}" onclick="done(${i},${j})">${s.ok?'✓':'○'}</button></div>`).join('')}</div>`).join('');
+document.getElementById('exerciciosAtivos').innerHTML=sessao.exercicios.map((e,i)=>`<div class="card"><h2>${safe(e.nome)}</h2><p class="muted">Meta: ${e.series} × ${metaReps(e)} reps · Descanso: ${e.descanso}s</p>${e.sugestaoProgressao?avisoProgressao({...e,sets:[{peso:e.cargaAnterior}]},true):""}<p class="muted">SÉRIE · PESO (${unidade(e)}) · REPS · OK</p>${e.sets.map((s,j)=>`<div class="set"><b>${j+1}</b><input type="number" min="0" step="0.5" value="${safe(s.peso)}" placeholder="${unidade(e)}" onchange="change(${i},${j},'peso',this.value)"><input type="number" min="1" value="${s.reps}" onchange="change(${i},${j},'reps',this.value)"><button class="${s.ok?'':'alt'}" onclick="done(${i},${j})">${s.ok?'✓':'○'}</button></div>`).join('')}</div>`).join('');
 }
 function change(i,j,k,v){if(sessao)sessao.exercicios[i].sets[j][k]=v}
 function done(i,j){
@@ -380,7 +409,16 @@ function skip(){clearInterval(intervalo);intervalo=null;document.getElementById(
 function finish(){
 if(!sessao)return alert('Nenhum treino em andamento.');
 if(!confirm('Salvar treino no histórico?'))return;
+const concluidos=sessao.exercicios.filter(podeProgredir);
 db.historico.unshift(sessao);sessao=null;skip();save();active();page('historico');
+if(concluidos.length){
+  document.getElementById('resumoProgressao').innerHTML =
+    '<div class="card"><h2>↗ Sugestões para o próximo treino</h2>'+
+    concluidos.map(e=>'<p><b>'+safe(e.nome)+'</b></p>'+avisoProgressao(e)).join('')+
+    '</div>';
+}else{
+  document.getElementById('resumoProgressao').innerHTML='';
+}
 }
 function historyView(){
 document.getElementById('registros').innerHTML=db.historico.map(h=>`<div class="card"><b>Treino ${h.ficha}</b><p class="muted">${new Date(h.data).toLocaleString('pt-BR')}</p>${h.exercicios.map(e=>`<p class="muted">${safe(e.nome)}: ${e.sets.filter(s=>s.ok).map(s=>safe(s.peso)+' '+unidade(e)+' × '+safe(s.reps)).join(' | ')||'Sem séries concluídas'}</p>`).join('')}</div>`).join('')||'<p class="muted">Nenhum treino registrado.</p>';
