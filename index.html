@@ -135,6 +135,16 @@ if(!Number.isInteger(db.quantidadeFichas)||db.quantidadeFichas<1||db.quantidadeF
 let ficha='A',sessao=null,restante=0,fim=0,intervalo=null,parado=false;
 function save(){localStorage.setItem('ferro2',JSON.stringify(db));render()}
 function unidade(e){return e.unidade==='lb'?'lb':'kg'}
+function faixaReps(valor){
+  const texto=String(valor??'').trim().replace(/[–—]/g,'-');
+  const m=texto.match(/^(\d+)\s*(?:-\s*(\d+))?$/);
+  if(!m)return null;
+  const min=Number(m[1]),max=m[2]===undefined?min:Number(m[2]);
+  if(!Number.isInteger(min)||!Number.isInteger(max)||min<1||max>200||min>max)return null;
+  return {min,max,texto:min===max?String(min):min+'-'+max};
+}
+function metaReps(e){return faixaReps(e.reps)?.texto||'12'}
+function repsIniciais(e){return faixaReps(e.reps)?.min||12}
 function alterarUnidade(i,valor){
   if(!['kg','lb'].includes(valor))return;
   db.fichas[ficha][i].unidade=valor;
@@ -168,7 +178,7 @@ function render(){
 document.getElementById('quantidadeFichas').innerHTML=Array.from({length:20},(_,i)=>`<option value="${i+1}" ${db.quantidadeFichas===i+1?'selected':''}>${i+1} ${i===0?'ficha':'fichas'}</option>`).join('');
 document.getElementById('home').innerHTML=fichasVisiveis().map(k=>`<div class="card row"><div><b>TREINO ${k}</b><p class="muted">${db.fichas[k].length} exercícios</p></div><button onclick="start('${k}')">INICIAR</button></div>`).join('');
 document.getElementById('tabs').innerHTML=fichasVisiveis().map(k=>`<button class="${k===ficha?'on':''}" onclick="ficha='${k}';render()">${k}</button>`).join('');
-document.getElementById('editor').innerHTML=db.fichas[ficha].map((e,i)=>`<div class="card"><div class="row"><div><b>${safe(e.nome)}</b><p class="muted">${e.series} séries × ${e.reps} reps · ${e.descanso}s</p></div><button class="alt" onclick="edit(${i})">Editar</button><button class="red" onclick="removeEx(${i})">×</button></div><div class="unit-row"><label>Unidade de peso</label><select aria-label="Unidade de ${safe(e.nome)}" onchange="alterarUnidade(${i},this.value)"><option value="kg" ${unidade(e)==='kg'?'selected':''}>kg — quilogramas</option><option value="lb" ${unidade(e)==='lb'?'selected':''}>lb — libras</option></select></div></div>`).join('')+'<button class="full" onclick="edit(-1)">+ ADICIONAR EXERCÍCIO</button>';
+document.getElementById('editor').innerHTML=db.fichas[ficha].map((e,i)=>`<div class="card"><div class="row"><div><b>${safe(e.nome)}</b><p class="muted">${e.series} séries × ${metaReps(e)} reps · ${e.descanso}s</p></div><button class="alt" onclick="edit(${i})">Editar</button><button class="red" onclick="removeEx(${i})">×</button></div><div class="unit-row"><label>Unidade de peso</label><select aria-label="Unidade de ${safe(e.nome)}" onchange="alterarUnidade(${i},this.value)"><option value="kg" ${unidade(e)==='kg'?'selected':''}>kg — quilogramas</option><option value="lb" ${unidade(e)==='lb'?'selected':''}>lb — libras</option></select></div></div>`).join('')+'<button class="full" onclick="edit(-1)">+ ADICIONAR EXERCÍCIO</button>';
 }
 function edit(i){
 let e=i<0?{nome:'',series:3,reps:12,descanso:90}:db.fichas[ficha][i];
@@ -177,13 +187,13 @@ if(nome===null)return;
 nome=nome.trim();if(!nome)return alert('Informe o nome.');
 let series=prompt('Número de séries:',e.series);
 if(series===null)return;
-let reps=prompt('Repetições por série:',e.reps);
+let reps=prompt('Repetições por série (ex.: 8-12 ou 10):',metaReps(e));
 if(reps===null)return;
 let descanso=prompt('Descanso em segundos:',e.descanso);
 if(descanso===null)return;
-series=Number(series);reps=Number(reps);descanso=Number(descanso);
-if(!Number.isInteger(series)||series<1||series>30||!Number.isInteger(reps)||reps<1||reps>200||!Number.isFinite(descanso)||descanso<0||descanso>1800)return alert('Confira os valores informados.');
-let novo={nome,series,reps,descanso,unidade:unidade(e)};
+series=Number(series);const faixa=faixaReps(reps);descanso=Number(descanso);
+if(!Number.isInteger(series)||series<1||series>30||!faixa||!Number.isFinite(descanso)||descanso<0||descanso>1800)return alert('Confira os valores informados.');
+let novo={nome,series,reps:faixa.texto,descanso,unidade:unidade(e)};
 if(i<0)db.fichas[ficha].push(novo);
 else db.fichas[ficha][i]=novo;
 save();
@@ -245,7 +255,7 @@ function start(k) {
 
           return {
             peso: antiga?.peso ?? '',
-            reps: antiga?.reps ?? e.reps,
+            reps: antiga?.reps ?? repsIniciais(e),
             ok: false
           };
         }
@@ -262,7 +272,7 @@ function start(k) {
 function active(){
 if(!sessao){document.getElementById('tituloTreino').textContent='Nenhum treino iniciado';document.getElementById('exerciciosAtivos').innerHTML='<p class="muted">Inicie um treino na tela inicial.</p>';return}
 document.getElementById('tituloTreino').textContent='Treino '+sessao.ficha;
-document.getElementById('exerciciosAtivos').innerHTML=sessao.exercicios.map((e,i)=>`<div class="card"><h2>${safe(e.nome)}</h2><p class="muted">Descanso: ${e.descanso}s</p><p class="muted">SÉRIE · PESO (${unidade(e)}) · REPS · OK</p>${e.sets.map((s,j)=>`<div class="set"><b>${j+1}</b><input type="number" min="0" step="0.5" value="${safe(s.peso)}" placeholder="${unidade(e)}" onchange="change(${i},${j},'peso',this.value)"><input type="number" min="1" value="${s.reps}" onchange="change(${i},${j},'reps',this.value)"><button class="${s.ok?'':'alt'}" onclick="done(${i},${j})">${s.ok?'✓':'○'}</button></div>`).join('')}</div>`).join('');
+document.getElementById('exerciciosAtivos').innerHTML=sessao.exercicios.map((e,i)=>`<div class="card"><h2>${safe(e.nome)}</h2><p class="muted">Meta: ${e.series} × ${metaReps(e)} reps · Descanso: ${e.descanso}s</p><p class="muted">SÉRIE · PESO (${unidade(e)}) · REPS · OK</p>${e.sets.map((s,j)=>`<div class="set"><b>${j+1}</b><input type="number" min="0" step="0.5" value="${safe(s.peso)}" placeholder="${unidade(e)}" onchange="change(${i},${j},'peso',this.value)"><input type="number" min="1" value="${s.reps}" onchange="change(${i},${j},'reps',this.value)"><button class="${s.ok?'':'alt'}" onclick="done(${i},${j})">${s.ok?'✓':'○'}</button></div>`).join('')}</div>`).join('');
 }
 function change(i,j,k,v){if(sessao)sessao.exercicios[i].sets[j][k]=v}
 function done(i,j){
@@ -420,8 +430,6 @@ r.readAsText(f);
 }
 render();active();
 </script>
-</body>
-  
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
@@ -435,4 +443,5 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+</body>
 </html>
