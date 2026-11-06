@@ -62,7 +62,7 @@ canvas{display:block;width:100%;height:auto;background:#10161b;border:1px solid 
 <body>
 <main>
 <div class="logo">FERRO.</div>
-<p class="muted">SEU TREINO. SUA EVOLUÇÃO. · VERSÃO 2.4</p>
+<p class="muted">SEU TREINO. SUA EVOLUÇÃO. · VERSÃO 2.5</p>
 
 <section id="inicio" class="page on">
 <h1>Vamos treinar!</h1>
@@ -458,9 +458,8 @@ document.getElementById('chartInfo').textContent=pts.length+' sessões com carga
 function zerarEvolucao(){
   if(!db.historico.length){alert('Sua evolução já está zerada.');return;}
   if(sessao){alert('Finalize ou saia do treino em andamento antes de zerar a evolução.');return;}
-  if(!confirm('ATENÇÃO: apagar todo o histórico de treinos, gráficos e cargas anteriores? Suas fichas serão preservadas. Esta ação não pode ser desfeita sem um backup.'))return;
-  const confirmacao=prompt('Para confirmar, digite ZERAR:');
-  if(confirmacao!=='ZERAR'){alert('Operação cancelada.');return;}
+  const confirmacao=prompt('ATENÇÃO: deseja apagar todo o histórico de treinos, gráficos e cargas anteriores?\n\nSuas fichas serão preservadas. Esta ação só poderá ser desfeita com um backup.\n\nDigite 1 para SIM ou 2 para NÃO:');
+  if(confirmacao!=='1'){alert('Operação cancelada.');return;}
   db.historico=[];
   save();
   document.getElementById('resumoProgressao').innerHTML='';
