@@ -62,8 +62,8 @@ canvas{display:block;width:100%;height:auto;background:#10161b;border:1px solid 
 </head>
 <body>
 <main>
-<div class="logo"><img src="./logo-workout.svg" alt="Logotipo Workout Training"><div class="brand-name"><strong>WORKOUT</strong><span>TRAINING</span></div><span class="brand-version">v2.6</span></div>
-<p class="muted">SEU TREINO. SUA EVOLUÇÃO. · VERSÃO 2.6</p>
+<div class="logo"><img src="./logo-workout.svg" alt="Logotipo Workout Training"><div class="brand-name"><strong>WORKOUT</strong><span>TRAINING</span></div><span class="brand-version">v2.7</span></div>
+<p class="muted">SEU TREINO. SUA EVOLUÇÃO. · VERSÃO 2.7</p>
 
 <section id="inicio" class="page on">
 <h1>Vamos treinar!</h1>
@@ -140,7 +140,8 @@ letras.forEach(x=>{if(!Array.isArray(db.fichas[x]))db.fichas[x]=[]});
 if(!Number.isInteger(db.quantidadeFichas)||db.quantidadeFichas<1||db.quantidadeFichas>20)db.quantidadeFichas=5;
 // Migração: preserva a seleção antiga na primeira abertura da nova versão.
 if(!Array.isArray(db.fichasAtivas))db.fichasAtivas=letras.slice(0,db.quantidadeFichas);
-db.fichasAtivas=[...new Set(db.fichasAtivas.filter(k=>letras.includes(k)))];
+db.fichasAtivas=[...new Set(db.fichasAtivas.filter(k=>letras.includes(k)))].sort((a,b)=>letras.indexOf(a)-letras.indexOf(b));
+if(!db.fichasAtivas.includes(db.proximaFicha))db.proximaFicha=db.fichasAtivas[0]||null;
 let ficha='A',sessao=null,restante=0,fim=0,intervalo=null,parado=false;
 function save(){localStorage.setItem('ferro2',JSON.stringify(db));render()}
 function unidade(e){return e.unidade==='lb'?'lb':'kg'}
@@ -208,12 +209,22 @@ function alternarFicha(k,marcada){
   if(marcada&&!db.fichasAtivas.includes(k))db.fichasAtivas.push(k);
   if(!marcada)db.fichasAtivas=db.fichasAtivas.filter(x=>x!==k);
   db.fichasAtivas.sort((a,b)=>letras.indexOf(a)-letras.indexOf(b));
+  if(!db.fichasAtivas.includes(db.proximaFicha))db.proximaFicha=db.fichasAtivas[0]||null;
+  save();
+}
+function selecionarProximo(k){
+  if(!fichasVisiveis().includes(k))return;
+  db.proximaFicha=k;
   save();
 }
 function render(){
   document.getElementById('seletorFichas').innerHTML=letras.map(k=>`<label class="${db.fichasAtivas.includes(k)?'ativa':''}"><input type="checkbox" ${db.fichasAtivas.includes(k)?'checked':''} onchange="alternarFicha('${k}',this.checked)">${k}</label>`).join('');
   document.getElementById('editarFicha').innerHTML=letras.map(k=>`<option value="${k}" ${k===ficha?'selected':''}>Ficha ${k} · ${db.fichas[k].length} exercícios${db.fichasAtivas.includes(k)?' · ativa':''}</option>`).join('');
-  document.getElementById('home').innerHTML=fichasVisiveis().map(k=>`<div class="card row"><div><b>TREINO ${k}</b><p class="muted">${db.fichas[k].length} exercícios</p></div><button onclick="start('${k}')">INICIAR</button></div>`).join('')||'<p class="muted">Nenhuma ficha ativa. Vá em FICHAS e selecione as que deseja utilizar.</p>';
+  const ativas=fichasVisiveis();
+  const proxima=ativas.includes(db.proximaFicha)?db.proximaFicha:ativas[0];
+  document.getElementById('home').innerHTML=proxima
+    ? `<div class="card"><p class="muted" style="margin:0 0 6px">PRÓXIMO TREINO · ${ativas.indexOf(proxima)+1} DE ${ativas.length}</p><h2 style="font-size:26px;color:var(--lime)">TREINO ${proxima}</h2><p class="muted">${db.fichas[proxima].length} exercícios · Ao finalizar, a próxima ficha ativa será selecionada automaticamente.</p><button class="full" onclick="start('${proxima}')">INICIAR TREINO ${proxima}</button><div class="unit-row"><label for="escolherProximo">Trocar treino</label><select id="escolherProximo" onchange="selecionarProximo(this.value)">${ativas.map(k=>`<option value="${k}" ${k===proxima?'selected':''}>Treino ${k}</option>`).join('')}</select></div></div>`
+    : '<p class="muted">Nenhuma ficha ativa. Vá em FICHAS e selecione as que deseja utilizar.</p>';
   document.getElementById('editor').innerHTML='<h2>Exercícios da ficha '+ficha+'</h2>'+db.fichas[ficha].map((e,i)=>`<div class="card"><div class="row"><div><b>${safe(e.nome)}</b><p class="muted">${e.series} séries × ${metaReps(e)} reps · ${e.descanso}s</p></div><button class="alt" onclick="edit(${i})">Editar</button><button class="red" onclick="removeEx(${i})">×</button></div><div class="unit-row"><label>Unidade de peso</label><select aria-label="Unidade de ${safe(e.nome)}" onchange="alterarUnidade(${i},this.value)"><option value="kg" ${unidade(e)==='kg'?'selected':''}>kg — quilogramas</option><option value="lb" ${unidade(e)==='lb'?'selected':''}>lb — libras</option></select></div></div>`).join('')+'<button class="full" onclick="edit(-1)">+ ADICIONAR EXERCÍCIO</button>';
 }
 function edit(i){
@@ -419,6 +430,9 @@ function finish(){
 if(!sessao)return alert('Nenhum treino em andamento.');
 if(!confirm('Salvar treino no histórico?'))return;
 const concluidos=sessao.exercicios.filter(podeProgredir);
+const concluiuFicha=sessao.ficha;
+const ordem=fichasVisiveis();
+if(ordem.includes(concluiuFicha))db.proximaFicha=ordem[(ordem.indexOf(concluiuFicha)+1)%ordem.length]||null;
 db.historico.unshift(sessao);sessao=null;skip();save();active();page('historico');
 if(concluidos.length){
   document.getElementById('resumoProgressao').innerHTML =
@@ -481,7 +495,8 @@ if(!d.fichas||!Array.isArray(d.historico)||!['A','B','C','D','E'].every(k=>Array
 letras.forEach(k=>{if(!Array.isArray(d.fichas[k]))d.fichas[k]=[]});
 if(!Number.isInteger(d.quantidadeFichas)||d.quantidadeFichas<1||d.quantidadeFichas>20)d.quantidadeFichas=5;
 if(!Array.isArray(d.fichasAtivas))d.fichasAtivas=letras.slice(0,d.quantidadeFichas);
-d.fichasAtivas=[...new Set(d.fichasAtivas.filter(k=>letras.includes(k)))];
+d.fichasAtivas=[...new Set(d.fichasAtivas.filter(k=>letras.includes(k)))].sort((a,b)=>letras.indexOf(a)-letras.indexOf(b));
+if(!d.fichasAtivas.includes(d.proximaFicha))d.proximaFicha=d.fichasAtivas[0]||null;
 if(confirm('Substituir seus dados atuais pelo backup?')){db=d;sessao=null;skip();save();active();page('inicio');alert('Backup restaurado!')}
 }catch(e){alert('Não foi possível restaurar o backup.')}
 ev.target.value='';
