@@ -68,6 +68,22 @@ body.access-granted #loginGate{display:none}
 .login-box{width:100%;max-width:430px}.login-brand{text-align:center;margin-bottom:24px}.login-brand img{width:92px;height:92px;object-fit:contain}.login-brand h1{margin:5px 0;color:var(--lime);font-size:27px}.login-brand p{color:var(--muted)}
 #loginGate .card{padding:24px}#loginGate .auth-actions{display:grid;grid-template-columns:1fr 1fr}#loginGate .auth-actions button{min-width:0}
 #loginGate .auth-status{min-height:24px}#loginGate .auth-warning{line-height:1.5}
+
+/* Workout Training 2.12 — ícones, grupos musculares e prévia do treino */
+.ui-icon{width:22px;height:22px;flex:none;color:var(--lime)}
+.heading-icon{display:flex;align-items:center;gap:11px}
+.heading-symbol{width:34px;height:34px;color:var(--lime);flex:none}
+nav button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 2px}
+.nav-icon{width:21px;height:21px;flex:none}
+.subgrupo-home{display:flex;align-items:center;gap:8px;color:#e9f8d7;font-size:15px;font-weight:800;margin:5px 0 10px!important}
+.subgrupo-home .ui-icon{width:19px;height:19px}
+.resumo-titulo{font-size:13px;letter-spacing:.3px;margin:19px 0 9px;color:#e8efeb}
+.resumo-lista{display:grid;gap:7px;margin-bottom:14px}
+.resumo-item{display:flex;align-items:flex-start;gap:10px;padding:10px;background:rgba(10,17,18,.5);border:1px solid rgba(134,159,145,.15);border-radius:10px}
+.resumo-num{width:23px;height:23px;flex:none;border-radius:8px;display:grid;place-items:center;background:rgba(199,255,53,.13);color:var(--lime);font-weight:850;font-size:12px}
+.resumo-item b{font-size:13px;font-weight:750;display:block}
+.resumo-item small{display:block;color:var(--muted);font-size:11px;margin-top:3px}
+@media(max-width:430px){nav button{font-size:10px;letter-spacing:0}.nav-icon{width:19px;height:19px}.heading-symbol{width:29px;height:29px}}
 </style>
 </head>
 <body>
@@ -78,19 +94,19 @@ body.access-granted #loginGate{display:none}
  </div>
 </div>
 <main>
-<div class="logo"><img src="./logo-workout.svg" alt="Logotipo Workout Training"><div class="brand-name"><strong>WORKOUT</strong><span>TRAINING</span></div><span class="brand-version">v2.11</span></div>
-<p class="muted">SEU TREINO. SUA EVOLUÇÃO. · VERSÃO 2.11</p>
+<div class="logo"><img src="./logo-workout.svg" alt="Logotipo Workout Training"><div class="brand-name"><strong>WORKOUT</strong><span>TRAINING</span></div><span class="brand-version">v2.12</span></div>
+<p class="muted">SEU TREINO. SUA EVOLUÇÃO. · VERSÃO 2.12</p>
 
 <section id="inicio" class="page on">
-<h1>Vamos treinar!</h1>
+<h1 class="heading-icon"><svg class="heading-symbol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6V4a3 3 0 0 1 6 0v2"/><path d="M8 6h8c3 0 5 2.5 5 5.5 0 4.5-3 8.5-9 8.5S3 16 3 11.5C3 8.5 5 6 8 6Z"/></svg><span>Vamos treinar!</span></h1>
 <div class="card">
-<h2>Minhas fichas</h2>
+<h2 class="heading-icon"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4.5h6M9 9h6M9 13h6M9 17h4"/></svg><span>Minhas fichas</span></h2>
 <div id="home"></div>
 </div>
 </section>
 
 <section id="configuracoes" class="page">
-<h1>Configurações</h1>
+<h1 class="heading-icon"><svg class="heading-symbol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5 14 5l2.4-.5.8 2.4 2.3 1.1-.6 2.4 1.5 2-1.5 2 .6 2.4-2.3 1.1-.8 2.4L14 20l-2 1.5L10 20l-2.4.5-.8-2.4-2.3-1.1.6-2.4-1.5-2 1.5-2-.6-2.4 2.3-1.1.8-2.4L10 5Z"/><circle cx="12" cy="12" r="3"/></svg><span>Configurações</span></h1>
 <div class="card auth-card" id="contaCard">
 <h2>☁ Minha conta</h2>
 <div id="authPanel"><p class="muted">Carregando acesso à nuvem…</p></div>
@@ -106,7 +122,7 @@ body.access-granted #loginGate{display:none}
 </section>
 
 <section id="fichas" class="page">
-<h1>Minhas fichas</h1>
+<h1 class="heading-icon"><svg class="heading-symbol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4.5h6M9 9h6M9 13h6M9 17h4"/></svg><span>Minhas fichas</span></h1>
 <div class="card"><h2>Fichas ativas</h2><p class="muted">Marque quais fichas devem aparecer no início. As demais continuam salvas e podem ser editadas.</p><div id="seletorFichas" class="seletor-fichas"></div></div>
 <div class="card"><label for="editarFicha">Editar ficha</label><select id="editarFicha" onchange="ficha=this.value;render()"></select></div>
 <div id="editor"></div>
@@ -128,7 +144,7 @@ body.access-granted #loginGate{display:none}
 </section>
 
 <section id="historico" class="page">
-<h1>Minha evolução</h1>
+<h1 class="heading-icon"><svg class="heading-symbol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V11M10 20V5M16 20v-8M22 20V8"/></svg><span>Minha evolução</span></h1>
 <div class="card">
 <label>Escolha um exercício</label>
 <select id="chartSelect" onchange="chart()"></select>
@@ -145,10 +161,10 @@ body.access-granted #loginGate{display:none}
 </section>
 
 <nav>
-<button class="on" onclick="page('inicio')">INÍCIO</button>
-<button onclick="page('fichas')">FICHAS</button>
-<button onclick="page('historico')">EVOLUÇÃO</button>
-<button onclick="page('configuracoes')">CONFIGURAÇÕES</button>
+<button class="on" onclick="page('inicio')"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10H3Z"/><path d="M9 20v-7h6v7"/></svg><span>Início</span></button>
+<button onclick="page('fichas')"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4.5h6M9 9h6M9 13h6M9 17h4"/></svg><span>Fichas</span></button>
+<button onclick="page('historico')"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V11M10 20V5M16 20v-8M22 20V8"/></svg><span>Evolução</span></button>
+<button onclick="page('configuracoes')"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5 14 5l2.4-.5.8 2.4 2.3 1.1-.6 2.4 1.5 2-1.5 2 .6 2.4-2.3 1.1-.8 2.4L14 20l-2 1.5L10 20l-2.4.5-.8-2.4-2.3-1.1.6-2.4-1.5-2 1.5-2-.6-2.4 2.3-1.1.8-2.4L10 5Z"/><circle cx="12" cy="12" r="3"/></svg><span>Configurações</span></button>
 </nav>
 </main>
 
@@ -156,6 +172,7 @@ body.access-granted #loginGate{display:none}
 const letras=Array.from({length:20},(_,i)=>String.fromCharCode(65+i));
 const fichasVisiveis=()=>db.fichasAtivas.filter(k=>letras.includes(k));
 const vazio=()=>Object.fromEntries(letras.map(x=>[x,[]]));
+const subgruposVazios=()=>Object.fromEntries(letras.map(x=>[x,'']));
 let db;
 try{db=JSON.parse(localStorage.getItem('ferro2'))}
 catch(e){}
@@ -167,6 +184,7 @@ if(!Number.isInteger(db.quantidadeFichas)||db.quantidadeFichas<1||db.quantidadeF
 if(!Array.isArray(db.fichasAtivas))db.fichasAtivas=letras.slice(0,db.quantidadeFichas);
 db.fichasAtivas=[...new Set(db.fichasAtivas.filter(k=>letras.includes(k)))].sort((a,b)=>letras.indexOf(a)-letras.indexOf(b));
 if(!db.fichasAtivas.includes(db.proximaFicha))db.proximaFicha=db.fichasAtivas[0]||null;
+if(!db.subgrupos||typeof db.subgrupos!=='object')db.subgrupos=subgruposVazios();
 let ficha='A',sessao=null,restante=0,fim=0,intervalo=null,parado=false;
 function save(){
   if(!window.WorkoutCloud?.uid || !window.WorkoutCloud?.ready || !document.body.classList.contains('access-granted'))return;
@@ -248,15 +266,26 @@ function selecionarProximo(k){
   db.proximaFicha=k;
   save();
 }
+function salvarSubgrupo(k,valor){
+  if(!letras.includes(k))return;
+  if(!db.subgrupos)db.subgrupos=subgruposVazios();
+  db.subgrupos[k]=String(valor).trim().slice(0,70);
+  save();
+}
+function resumoFicha(k){
+  const lista=db.fichas[k]||[];
+  if(!lista.length)return '<p class="muted">Esta ficha ainda não tem exercícios cadastrados.</p>';
+  return `<div class="resumo-lista">${lista.map((e,i)=>`<div class="resumo-item"><span class="resumo-num">${i+1}</span><div><b>${safe(e.nome||'Exercício')}</b><small>${safe(e.series)} séries × ${safe(metaReps(e))} repetições · ${safe(e.descanso)}s de descanso</small></div></div>`).join('')}</div>`;
+}
 function render(){
   document.getElementById('seletorFichas').innerHTML=letras.map(k=>`<label class="${db.fichasAtivas.includes(k)?'ativa':''}"><input type="checkbox" ${db.fichasAtivas.includes(k)?'checked':''} onchange="alternarFicha('${k}',this.checked)">${k}</label>`).join('');
   document.getElementById('editarFicha').innerHTML=letras.map(k=>`<option value="${k}" ${k===ficha?'selected':''}>Ficha ${k} · ${db.fichas[k].length} exercícios${db.fichasAtivas.includes(k)?' · ativa':''}</option>`).join('');
   const ativas=fichasVisiveis();
   const proxima=ativas.includes(db.proximaFicha)?db.proximaFicha:ativas[0];
   document.getElementById('home').innerHTML=proxima
-    ? `<div class="card"><p class="muted" style="margin:0 0 6px">PRÓXIMO TREINO · ${ativas.indexOf(proxima)+1} DE ${ativas.length}</p><h2 style="font-size:26px;color:var(--lime)">TREINO ${proxima}</h2><p class="muted">${db.fichas[proxima].length} exercícios · Ao finalizar, a próxima ficha ativa será selecionada automaticamente.</p><button class="full" onclick="start('${proxima}')">INICIAR TREINO ${proxima}</button><div class="unit-row"><label for="escolherProximo">Trocar treino</label><select id="escolherProximo" onchange="selecionarProximo(this.value)">${ativas.map(k=>`<option value="${k}" ${k===proxima?'selected':''}>Treino ${k}</option>`).join('')}</select></div></div>`
+    ? `<div class="card"><p class="muted" style="margin:0 0 6px">PRÓXIMO TREINO · ${ativas.indexOf(proxima)+1} DE ${ativas.length}</p><h2 style="font-size:26px;color:var(--lime)">TREINO ${proxima}</h2><p class="subgrupo-home"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 18c2 2 5 3 9 2 4-1 7-4 7-7v-3h-4l-2 3-3-2-2 2-3-1-2 3Z"/><path d="M16 10V6c0-2 3-2 3 0v4"/></svg><span>${safe(db.subgrupos?.[proxima]||'Grupo muscular não definido')}</span></p><p class="muted">${db.fichas[proxima].length} exercícios · Ao finalizar, a próxima ficha ativa será selecionada automaticamente.</p><h3 class="resumo-titulo">Exercícios de hoje</h3>${resumoFicha(proxima)}<button class="full" onclick="start('${proxima}')">INICIAR TREINO ${proxima}</button><div class="unit-row"><label for="escolherProximo">Trocar treino</label><select id="escolherProximo" onchange="selecionarProximo(this.value)">${ativas.map(k=>`<option value="${k}" ${k===proxima?'selected':''}>Treino ${k}</option>`).join('')}</select></div></div>`
     : '<p class="muted">Nenhuma ficha ativa. Vá em FICHAS e selecione as que deseja utilizar.</p>';
-  document.getElementById('editor').innerHTML='<h2>Exercícios da ficha '+ficha+'</h2>'+db.fichas[ficha].map((e,i)=>`<div class="card"><div class="row"><div><b>${safe(e.nome)}</b><p class="muted">${e.series} séries × ${metaReps(e)} reps · ${e.descanso}s</p></div><button class="alt" onclick="edit(${i})">Editar</button><button class="red" onclick="removeEx(${i})">×</button></div><div class="unit-row"><label>Unidade de peso</label><select aria-label="Unidade de ${safe(e.nome)}" onchange="alterarUnidade(${i},this.value)"><option value="kg" ${unidade(e)==='kg'?'selected':''}>kg — quilogramas</option><option value="lb" ${unidade(e)==='lb'?'selected':''}>lb — libras</option></select></div></div>`).join('')+'<button class="full" onclick="edit(-1)">+ ADICIONAR EXERCÍCIO</button>';
+  document.getElementById('editor').innerHTML='<div class="card"><label for="subgrupoFicha">Grupo muscular / membro treinado — Ficha '+ficha+'</label><input id="subgrupoFicha" type="text" maxlength="70" placeholder="Ex.: Peito e tríceps, Pernas, Costas e bíceps" value="'+safe(db.subgrupos?.[ficha]||'')+'" onchange="salvarSubgrupo(ficha,this.value)"><p class="muted">Aparece abaixo do nome da ficha na tela inicial.</p></div><h2>Exercícios da ficha '+ficha+'</h2>'+db.fichas[ficha].map((e,i)=>`<div class="card"><div class="row"><div><b>${safe(e.nome)}</b><p class="muted">${e.series} séries × ${metaReps(e)} reps · ${e.descanso}s</p></div><button class="alt" onclick="edit(${i})">Editar</button><button class="red" onclick="removeEx(${i})">×</button></div><div class="unit-row"><label>Unidade de peso</label><select aria-label="Unidade de ${safe(e.nome)}" onchange="alterarUnidade(${i},this.value)"><option value="kg" ${unidade(e)==='kg'?'selected':''}>kg — quilogramas</option><option value="lb" ${unidade(e)==='lb'?'selected':''}>lb — libras</option></select></div></div>`).join('')+'<button class="full" onclick="edit(-1)">+ ADICIONAR EXERCÍCIO</button>';
 }
 function edit(i){
 let e=i<0?{nome:'',series:3,reps:12,descanso:90}:db.fichas[ficha][i];
@@ -528,6 +557,7 @@ if(!Number.isInteger(d.quantidadeFichas)||d.quantidadeFichas<1||d.quantidadeFich
 if(!Array.isArray(d.fichasAtivas))d.fichasAtivas=letras.slice(0,d.quantidadeFichas);
 d.fichasAtivas=[...new Set(d.fichasAtivas.filter(k=>letras.includes(k)))].sort((a,b)=>letras.indexOf(a)-letras.indexOf(b));
 if(!d.fichasAtivas.includes(d.proximaFicha))d.proximaFicha=d.fichasAtivas[0]||null;
+if(!d.subgrupos||typeof d.subgrupos!=='object')d.subgrupos=subgruposVazios();
 if(confirm('Substituir seus dados atuais pelo backup?')){db=d;sessao=null;skip();save();active();page('inicio');alert('Backup restaurado! Se estiver conectado, aguarde a sincronização.')}
 }catch(e){alert('Não foi possível restaurar o backup.')}
 ev.target.value='';
@@ -550,7 +580,7 @@ const FIREBASE_CONFIG = {
   appId: "1:245842087831:web:60ac575dd54b8f097dfed2"
 };
 const chaveLocalAtual=()=>window.WorkoutCloud?.uid ? 'workout-training-user-'+window.WorkoutCloud.uid : 'ferro2';
-const novaBase=()=>({fichas:vazio(),historico:[],quantidadeFichas:5,fichasAtivas:letras.slice(0,5),proximaFicha:'A'});
+const novaBase=()=>({fichas:vazio(),historico:[],quantidadeFichas:5,fichasAtivas:letras.slice(0,5),proximaFicha:'A',subgrupos:subgruposVazios()});
 function normalizarBase(d){
   if(!d||typeof d!=='object'||!d.fichas||typeof d.fichas!=='object'||!Array.isArray(d.historico))return novaBase();
   letras.forEach(k=>{if(!Array.isArray(d.fichas[k]))d.fichas[k]=[]});
@@ -558,6 +588,7 @@ function normalizarBase(d){
   if(!Array.isArray(d.fichasAtivas))d.fichasAtivas=letras.slice(0,d.quantidadeFichas);
   d.fichasAtivas=[...new Set(d.fichasAtivas.filter(k=>letras.includes(k)))].sort();
   if(!d.fichasAtivas.includes(d.proximaFicha))d.proximaFicha=d.fichasAtivas[0]||null;
+  if(!d.subgrupos||typeof d.subgrupos!=='object')d.subgrupos=subgruposVazios();
   return d;
 }
 const cloud={uid:null,auth:null,firestore:null,ref:null,rev:0,timer:null,busy:false,dirty:false,ready:false,loading:false,conflict:false};
