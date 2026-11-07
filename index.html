@@ -78,19 +78,23 @@ body.access-granted #loginGate{display:none}
  </div>
 </div>
 <main>
-<div class="logo"><img src="./logo-workout.svg" alt="Logotipo Workout Training"><div class="brand-name"><strong>WORKOUT</strong><span>TRAINING</span></div><span class="brand-version">v2.10</span></div>
-<p class="muted">SEU TREINO. SUA EVOLUÇÃO. · VERSÃO 2.10</p>
+<div class="logo"><img src="./logo-workout.svg" alt="Logotipo Workout Training"><div class="brand-name"><strong>WORKOUT</strong><span>TRAINING</span></div><span class="brand-version">v2.11</span></div>
+<p class="muted">SEU TREINO. SUA EVOLUÇÃO. · VERSÃO 2.11</p>
 
 <section id="inicio" class="page on">
-<div class="card auth-card" id="contaCard">
-<h2>☁ Minha conta</h2>
-<div id="authPanel"><p class="muted">Carregando acesso à nuvem…</p></div>
-<p class="auth-status" id="cloudStatus" role="status">Os treinos continuam salvos neste aparelho.</p>
-</div>
 <h1>Vamos treinar!</h1>
 <div class="card">
 <h2>Minhas fichas</h2>
 <div id="home"></div>
+</div>
+</section>
+
+<section id="configuracoes" class="page">
+<h1>Configurações</h1>
+<div class="card auth-card" id="contaCard">
+<h2>☁ Minha conta</h2>
+<div id="authPanel"><p class="muted">Carregando acesso à nuvem…</p></div>
+<p class="auth-status" id="cloudStatus" role="status">Os treinos continuam salvos neste aparelho.</p>
 </div>
 <div class="card">
 <h2>Backup de segurança</h2>
@@ -144,6 +148,7 @@ body.access-granted #loginGate{display:none}
 <button class="on" onclick="page('inicio')">INÍCIO</button>
 <button onclick="page('fichas')">FICHAS</button>
 <button onclick="page('historico')">EVOLUÇÃO</button>
+<button onclick="page('configuracoes')">CONFIGURAÇÕES</button>
 </nav>
 </main>
 
@@ -227,7 +232,7 @@ function safe(s){
 function page(id){
 if(!document.body.classList.contains('access-granted'))return;
 document.querySelectorAll('.page').forEach(e=>e.classList.toggle('on',e.id===id));
-document.querySelectorAll('nav button').forEach((b,i)=>b.classList.toggle('on',['inicio','fichas','historico'][i]===(id==='treinar'?'inicio':id)));
+document.querySelectorAll('nav button').forEach((b,i)=>b.classList.toggle('on',['inicio','fichas','historico','configuracoes'][i]===(id==='treinar'?'inicio':id)));
 if(id==='historico'){document.getElementById('resumoProgressao').innerHTML='';historyView();}
 }
 function alternarFicha(k,marcada){
