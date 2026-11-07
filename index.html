@@ -60,12 +60,26 @@ canvas{display:block;width:100%;height:auto;background:#10161b;border:1px solid 
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 
 .auth-card{border-color:#566e32!important}.auth-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.auth-actions button{flex:1 1 140px}.auth-status{font-size:13px;color:var(--muted);margin-top:10px}.auth-status strong{color:var(--lime)}.auth-field{margin-top:10px}.auth-warning{color:#ffd58d;font-size:12px}.auth-card input{max-width:100%}
+
+/* Bloqueio visual: nenhum treino aparece antes da autenticação e do carregamento. */
+body:not(.access-granted) main{display:none!important}
+#loginGate{position:fixed;inset:0;z-index:9999;overflow-y:auto;display:flex;align-items:center;justify-content:center;padding:24px 14px;background:linear-gradient(155deg,#090d10,#19211b)}
+body.access-granted #loginGate{display:none}
+.login-box{width:100%;max-width:430px}.login-brand{text-align:center;margin-bottom:24px}.login-brand img{width:92px;height:92px;object-fit:contain}.login-brand h1{margin:5px 0;color:var(--lime);font-size:27px}.login-brand p{color:var(--muted)}
+#loginGate .card{padding:24px}#loginGate .auth-actions{display:grid;grid-template-columns:1fr 1fr}#loginGate .auth-actions button{min-width:0}
+#loginGate .auth-status{min-height:24px}#loginGate .auth-warning{line-height:1.5}
 </style>
 </head>
 <body>
+<div id="loginGate" role="region" aria-label="Acesso ao Workout Training">
+ <div class="login-box">
+  <div class="login-brand"><img src="./logo-workout.svg" alt="Workout Training"><h1>WORKOUT TRAINING</h1><p>Entre na sua conta para acessar os treinos</p></div>
+  <div class="card auth-card"><div id="gatePanel"><p class="muted">Verificando sua sessão…</p></div><p id="gateStatus" class="auth-status" role="status">Conectando com segurança…</p></div>
+ </div>
+</div>
 <main>
-<div class="logo"><img src="./logo-workout.svg" alt="Logotipo Workout Training"><div class="brand-name"><strong>WORKOUT</strong><span>TRAINING</span></div><span class="brand-version">v2.8</span></div>
-<p class="muted">SEU TREINO. SUA EVOLUÇÃO. · VERSÃO 2.8</p>
+<div class="logo"><img src="./logo-workout.svg" alt="Logotipo Workout Training"><div class="brand-name"><strong>WORKOUT</strong><span>TRAINING</span></div><span class="brand-version">v2.9</span></div>
+<p class="muted">SEU TREINO. SUA EVOLUÇÃO. · VERSÃO 2.9</p>
 
 <section id="inicio" class="page on">
 <div class="card auth-card" id="contaCard">
@@ -151,6 +165,7 @@ db.fichasAtivas=[...new Set(db.fichasAtivas.filter(k=>letras.includes(k)))].sort
 if(!db.fichasAtivas.includes(db.proximaFicha))db.proximaFicha=db.fichasAtivas[0]||null;
 let ficha='A',sessao=null,restante=0,fim=0,intervalo=null,parado=false;
 function save(){
+  if(!window.WorkoutCloud?.uid || !window.WorkoutCloud?.ready || !document.body.classList.contains('access-granted'))return;
   localStorage.setItem(chaveLocalAtual(),JSON.stringify(db));
   render();
   if(window.WorkoutCloud)window.WorkoutCloud.agendar();
@@ -211,6 +226,7 @@ function safe(s){
 }
 
 function page(id){
+if(!document.body.classList.contains('access-granted'))return;
 document.querySelectorAll('.page').forEach(e=>e.classList.toggle('on',e.id===id));
 document.querySelectorAll('nav button').forEach((b,i)=>b.classList.toggle('on',['inicio','fichas','treinar','historico'][i]===id));
 if(id==='historico'){document.getElementById('resumoProgressao').innerHTML='';historyView();}
@@ -494,7 +510,7 @@ function zerarEvolucao(){
 }
 function backup(){
 let blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
-let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ferro-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='workout-training-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 }
 function restore(ev){
 let f=ev.target.files[0];if(!f)return;
@@ -520,7 +536,7 @@ render();active();
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script>
-// Workout Training 2.8 — cada conta tem sua cópia local independente.
+// Workout Training 2.9 — cada conta tem sua cópia local independente.
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyAMzl7UbZy5Ziiq07I5e2sPQmrnY2sAKHY",
   authDomain: "workout-training-173f9.firebaseapp.com",
@@ -542,7 +558,6 @@ function normalizarBase(d){
 }
 const cloud={uid:null,auth:null,firestore:null,ref:null,rev:0,timer:null,busy:false,dirty:false,ready:false,loading:false,conflict:false};
 window.WorkoutCloud=cloud;
-function cloudMessage(t){document.getElementById('cloudStatus').textContent=t}
 function authError(err){
  const codes={
  'auth/invalid-email':'E-mail inválido.',
@@ -551,19 +566,40 @@ function authError(err){
  'auth/weak-password':'Use uma senha mais forte (mínimo de 6 caracteres).',
  'auth/popup-closed-by-user':'A janela do Google foi fechada.',
  'auth/unauthorized-domain':'Autorize thiagostein1107.github.io no Firebase Authentication.',
- 'auth/network-request-failed':'Falha de conexão. Tente novamente com internet.'
+ 'auth/network-request-failed':'Falha de conexão. Tente novamente com internet.',
+ 'auth/too-many-requests':'Muitas tentativas. Aguarde alguns minutos.',
+ 'auth/user-disabled':'Esta conta foi desativada.'
  };
  alert(codes[err?.code]||('Não foi possível autenticar: '+(err?.message||'erro desconhecido')));
 }
+function mostrarAcesso(ok){document.body.classList.toggle('access-granted',!!ok)}
+function cloudMessage(t){
+ document.getElementById('cloudStatus').textContent=t;
+ document.getElementById('gateStatus').textContent=t;
+}
 function renderAuth(){
- const el=document.getElementById('authPanel');
- if(!cloud.auth){el.innerHTML='<p class="auth-warning">Sem conexão com o Firebase. Você ainda pode treinar localmente e exportar backup.</p>';return}
+ const el=document.getElementById('authPanel'),gate=document.getElementById('gatePanel');
+ if(!cloud.auth){
+  const msg='<p class="auth-warning">Não foi possível carregar o Firebase. Verifique a internet e atualize a página.</p>';
+  el.innerHTML=msg;gate.innerHTML=msg;return;
+ }
  const user=cloud.auth.currentUser;
  if(user){
-   el.innerHTML='<p class="muted">Conectado como <strong>'+safe(user.email||user.displayName||'Conta Google')+'</strong></p><div class="auth-actions"><button class="alt" onclick="sincronizarAgora()">Sincronizar agora</button><button class="alt" onclick="sairConta()">Sair da conta</button></div>';
+  el.innerHTML='<p class="muted">Conectado como <strong>'+safe(user.email||'Usuário')+'</strong></p><div class="auth-actions"><button class="alt" onclick="sincronizarAgora()">Sincronizar agora</button><button class="alt" onclick="sairConta()">Sair da conta</button></div>';
+  gate.innerHTML='<p class="muted">Preparando seus treinos…</p>';
  }else{
-   el.innerHTML='<p class="muted">Entre para salvar suas fichas e histórico na nuvem.</p><div class="auth-field"><label for="authEmail">E-mail</label><input id="authEmail" type="email" autocomplete="email" placeholder="seu@email.com"><label for="authSenha">Senha</label><input id="authSenha" type="password" autocomplete="current-password" placeholder="Mínimo 6 caracteres"></div><div class="auth-actions"><button onclick="entrarEmail(false)">Entrar</button><button class="alt" onclick="entrarEmail(true)">Criar conta</button><button class="alt" onclick="entrarGoogle()">Entrar com Google</button></div>';
+  const form='<p class="muted">Entre com seu e-mail e senha. Seus dados ficam associados à sua conta.</p><form id="loginForm" onsubmit="event.preventDefault();entrarEmail(false)"><div class="auth-field"><label for="authEmail">E-mail</label><input id="authEmail" type="email" autocomplete="email" required placeholder="seu@email.com"><label for="authSenha">Senha</label><input id="authSenha" type="password" autocomplete="current-password" required minlength="6" placeholder="Sua senha"></div><div class="auth-actions"><button type="submit">Entrar</button><button type="button" class="alt" onclick="entrarEmail(true)">Criar conta</button></div><button type="button" class="alt full" onclick="recuperarSenha()">Esqueci minha senha</button></form>';
+  gate.innerHTML=form;
+  el.innerHTML='<p class="muted">Entre para acessar seus treinos.</p>';
  }
+}
+async function recuperarSenha(){
+ const email=document.getElementById('authEmail')?.value.trim();
+ if(!email)return alert('Digite seu e-mail acima para receber o link de recuperação.');
+ try{
+  await cloud.auth.sendPasswordResetEmail(email);
+  alert('Se o e-mail estiver cadastrado, você receberá instruções para redefinir sua senha. Verifique também o spam.');
+ }catch(e){authError(e)}
 }
 async function entrarEmail(criar){
  const email=document.getElementById('authEmail')?.value.trim();
@@ -583,18 +619,20 @@ async function entrarGoogle(){
 }
 async function sairConta(){
  if(sessao)return alert('Finalize o treino em andamento antes de sair.');
- if(cloud.dirty||cloud.busy)return alert('Há dados aguardando sincronização. Conecte-se à internet e sincronize antes de sair.');
+ if(cloud.dirty||cloud.busy||cloud.conflict)return alert('Há dados pendentes ou conflito. Resolva a sincronização antes de sair.');
  if(!confirm('Sair da conta? Os dados locais dessa conta serão preservados neste aparelho.'))return;
+ mostrarAcesso(false);
  await cloud.auth.signOut();
 }
 function dadosLocaisRelevantes(d){return !!(d&&((d.historico?.length||0)>0||Object.values(d.fichas||{}).some(a=>Array.isArray(a)&&a.length>0)))}
 async function mudarUsuario(user){
  clearTimeout(cloud.timer);
  if(sessao){sessao=null;skip();active()}
+ mostrarAcesso(false);
  cloud.ready=false;cloud.loading=true;cloud.conflict=false;cloud.dirty=false;cloud.rev=0;
  cloud.uid=user?.uid||null;
  cloud.ref=user?cloud.firestore.collection('usuarios').doc(user.uid).collection('dados').doc('principal'):null;
- if(!user){db=normalizarBase(JSON.parse(localStorage.getItem('ferro2')||'null'));cloud.loading=false;render();active();renderAuth();cloudMessage('Modo local: seus treinos estão apenas neste aparelho.');return}
+ if(!user){cloud.loading=false;db=novaBase();renderAuth();cloudMessage('Entre com seu e-mail e senha para continuar.');return}
  renderAuth();cloudMessage('Carregando seus dados da nuvem…');
  let local=null;
  try{local=JSON.parse(localStorage.getItem(chaveLocalAtual())||'null')}catch(e){}
@@ -623,12 +661,13 @@ async function mudarUsuario(user){
      }else{db=novaBase();cloud.dirty=true}
      localStorage.setItem(chaveLocalAtual(),JSON.stringify(db));
    }
-   cloud.ready=true;cloud.loading=false;render();active();renderAuth();
-   if(cloud.dirty&&!cloud.conflict)await enviarNuvem();
+   cloud.ready=true;cloud.loading=false;render();active();renderAuth();mostrarAcesso(true);
+   if(cloud.dirty&&!cloud.conflict){localStorage.setItem('workout-training-pending-'+user.uid,'1');await enviarNuvem();}
  }catch(e){
    cloud.loading=false;db=normalizarBase(local);
    cloud.ready=true;cloud.dirty=true;
-   render();active();renderAuth();
+   localStorage.setItem('workout-training-pending-'+user.uid,'1');
+   render();active();renderAuth();mostrarAcesso(true);
    cloudMessage('Sem acesso à nuvem. Dados salvos neste aparelho; sincronize quando a internet voltar.');
  }
 }
@@ -678,36 +717,43 @@ async function enviarNuvem(){
 }
 async function resolverConflito(){
  if(!cloud.conflict||!cloud.uid)return;
- const manterLocal=confirm('Há alterações diferentes na nuvem e neste aparelho.\n\nOK = manter os dados DESTE aparelho (substitui a nuvem).\nCancelar = carregar os dados da NUVEM (substitui os dados desta conta no aparelho).\n\nAntes de decidir, exporte um backup se tiver dúvidas.');
- if(!navigator.onLine){alert('Conecte-se à internet para resolver o conflito.');return}
+ if(!navigator.onLine){cloudMessage('Conecte-se à internet para resolver o conflito.');return}
+ // Faz backup dos dados locais antes de qualquer decisão potencialmente destrutiva.
+ backup();
+ const manterLocal=confirm('Detectamos alterações diferentes neste aparelho e na nuvem. Um backup dos dados deste aparelho foi baixado.\n\nOK = tentar manter os dados DESTE aparelho.\nCancelar = carregar os dados da NUVEM.\n\nSe houver outra alteração simultânea, o sistema bloqueará a substituição.');
+ const uid=cloud.uid;
  try{
    const snap=await cloud.ref.get({source:'server'});
+   if(uid!==cloud.uid)return;
    cloud.rev=snap.exists?(snap.data().rev||0):0;
-   if(manterLocal){cloud.conflict=false;cloud.dirty=true;await enviarNuvem()}
-   else{
+   if(manterLocal){
+     cloud.conflict=false;cloud.dirty=true;
+     localStorage.setItem('workout-training-pending-'+uid,'1');
+     await enviarNuvem();
+   }else{
      db=normalizarBase(snap.exists?snap.data().treino:novaBase());
      localStorage.setItem(chaveLocalAtual(),JSON.stringify(db));
-     localStorage.removeItem('workout-training-pending-'+cloud.uid);
-     cloud.conflict=false;cloud.dirty=false;render();active();cloudMessage('✓ Dados da nuvem carregados.');
+     localStorage.removeItem('workout-training-pending-'+uid);
+     cloud.conflict=false;cloud.dirty=false;render();active();cloudMessage('✓ Dados da nuvem carregados. Backup local preservado.');
    }
- }catch(e){cloudMessage('Não foi possível resolver agora. Tente novamente com internet.')}
+ }catch(e){cloud.conflict=true;cloudMessage('Não foi possível resolver agora. Tente novamente com internet.')}
 }
 async function sincronizarAgora(){
  if(!cloud.uid)return;
  if(cloud.conflict)return resolverConflito();
  if(!navigator.onLine)return alert('Conecte-se à internet.');
  if(cloud.dirty)return enviarNuvem();
- cloudMessage('✓ Tudo sincronizado com a nuvem.');
+ try{const snap=await cloud.ref.get({source:'server'});if(snap.exists && (snap.data().rev||0)!==cloud.rev){cloud.conflict=true;return resolverConflito()}cloudMessage('✓ Tudo sincronizado com a nuvem.')}catch(e){cloudMessage('Não foi possível verificar a nuvem. Tente novamente.')}
 }
 window.addEventListener('online',()=>{if(cloud.dirty&&!cloud.conflict)enviarNuvem()});
 try{
  if(!window.firebase)throw Error('Biblioteca Firebase indisponível');
  firebase.initializeApp(FIREBASE_CONFIG);
  cloud.auth=firebase.auth();cloud.firestore=firebase.firestore();
- cloud.auth.onAuthStateChanged(user=>mudarUsuario(user).catch(e=>{console.error(e);cloudMessage('Erro ao carregar a conta. Exporte um backup antes de alterar dados.')}));
+ cloud.auth.onAuthStateChanged(user=>mudarUsuario(user).catch(e=>{console.error(e);mostrarAcesso(false);cloudMessage('Erro ao carregar a conta. Recarregue a página com internet.')}));
  cloud.auth.getRedirectResult().catch(authError);
  renderAuth();
-}catch(e){console.error('Firebase:',e);renderAuth();cloudMessage('Modo local. Para entrar, conecte-se à internet e recarregue a página.');}
+}catch(e){console.error('Firebase:',e);renderAuth();cloudMessage('Para entrar, conecte-se à internet e recarregue a página.');}
 
 </script>
 <script>
