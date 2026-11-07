@@ -85,6 +85,8 @@ nav button{display:flex;flex-direction:column;align-items:center;justify-content
 .resumo-item b{font-size:13px;font-weight:750;display:block}
 .resumo-item small{display:block;color:var(--muted);font-size:11px;margin-top:3px}
 @media(max-width:430px){nav button{font-size:10px;letter-spacing:0}.nav-icon{width:19px;height:19px}.heading-symbol{width:29px;height:29px}.sport-icon{width:39px;height:39px}.muscle-emoji{font-size:25px}}
+/* Contador de ciclo 2.14 */
+.ciclo-card{border-color:rgba(199,255,53,.4)}.ciclo-numeros{display:flex;align-items:baseline;gap:8px;margin:9px 0}.ciclo-numeros strong{font-size:31px;color:var(--lime)}.ciclo-barra{height:11px;background:#10161a;border-radius:12px;overflow:hidden;border:1px solid #35443b}.ciclo-barra>div{height:100%;background:var(--lime);transition:width .2s}.ciclo-grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(70px,1fr));gap:8px;margin:13px 0}.ciclo-mini{padding:9px 5px;text-align:center;border:1px solid #38463d;background:#17231d;border-radius:10px}.ciclo-mini b{display:block;color:var(--lime);font-size:19px}.ciclo-mini small{color:var(--muted)}.ciclo-aviso{color:var(--lime);font-weight:800}
 </style>
 </head>
 <body>
@@ -95,14 +97,14 @@ nav button{display:flex;flex-direction:column;align-items:center;justify-content
  </div>
 </div>
 <main>
-<div class="logo"><img src="./logo-workout.svg" alt="Logotipo Workout Training"><div class="brand-name"><strong>WORKOUT</strong><span>TRAINING</span></div><span class="brand-version">v2.13.2</span></div>
-<p class="muted">SEU TREINO. SUA EVOLUÇÃO. · VERSÃO 2.13.2</p>
+<div class="logo"><img src="./logo-workout.svg" alt="Logotipo Workout Training"><div class="brand-name"><strong>WORKOUT</strong><span>TRAINING</span></div><span class="brand-version">v2.14</span></div>
+<p class="muted">SEU TREINO. SUA EVOLUÇÃO. · VERSÃO 2.14</p>
 
 <section id="inicio" class="page on">
 <h1 class="heading-icon"><span class="sport-icon" aria-hidden="true"><span class="muscle-emoji">💪</span></span><span>Vamos treinar!</span></h1>
 <div class="card">
 <h2 class="heading-icon"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4.5h6M9 9h6M9 13h6M9 17h4"/></svg><span>Minhas fichas</span></h2>
-<div id="home"></div>
+<div id="home"></div><div id="contadorCiclo"></div>
 </div>
 </section>
 
@@ -120,6 +122,7 @@ nav button{display:flex;flex-direction:column;align-items:center;justify-content
 <button class="alt" onclick="document.getElementById('file').click()">Restaurar</button>
 <input type="file" id="file" accept=".json" style="display:none" onchange="restore(event)">
 </div>
+<div class="card"><h2>Contador de treinos</h2><p class="muted">Defina a meta total do ciclo ou comece outro ciclo. Os treinos antigos continuam no histórico.</p><button class="alt" onclick="alterarMetaCiclo()">Alterar meta do ciclo</button> <button class="alt" onclick="novoCiclo()">Iniciar novo ciclo</button></div>
 </section>
 
 <section id="fichas" class="page">
@@ -186,6 +189,7 @@ if(!Array.isArray(db.fichasAtivas))db.fichasAtivas=letras.slice(0,db.quantidadeF
 db.fichasAtivas=[...new Set(db.fichasAtivas.filter(k=>letras.includes(k)))].sort((a,b)=>letras.indexOf(a)-letras.indexOf(b));
 if(!db.fichasAtivas.includes(db.proximaFicha))db.proximaFicha=db.fichasAtivas[0]||null;
 if(!db.subgrupos||typeof db.subgrupos!=='object')db.subgrupos=subgruposVazios();
+garantirCiclo(db);
 let ficha='A',sessao=null,restante=0,fim=0,intervalo=null,parado=false;
 function save(){
   if(!window.WorkoutCloud?.uid || !window.WorkoutCloud?.ready || !document.body.classList.contains('access-granted'))return;
@@ -278,7 +282,38 @@ function resumoFicha(k){
   if(!lista.length)return '<p class="muted">Esta ficha ainda não tem exercícios cadastrados.</p>';
   return `<div class="resumo-lista">${lista.map((e,i)=>`<div class="resumo-item"><span class="resumo-num">${i+1}</span><div><b>${safe(e.nome||'Exercício')}</b><small>${safe(e.series)} séries × ${safe(metaReps(e))} repetições · ${safe(e.descanso)}s de descanso</small></div></div>`).join('')}</div>`;
 }
+// O ciclo inicia em zero na primeira atualização; históricos anteriores permanecem intactos.
+function cicloPadrao(){return {meta:40,realizados:0,porFicha:{},iniciadoEm:new Date().toISOString(),concluidoEm:null}}
+function garantirCiclo(d){
+ if(!d.ciclo||typeof d.ciclo!== 'object')d.ciclo=cicloPadrao();
+ const c=d.ciclo;
+ if(!Number.isInteger(c.meta)||c.meta<1||c.meta>500)c.meta=40;
+ if(!Number.isInteger(c.realizados)||c.realizados<0)c.realizados=0;
+ if(!c.porFicha||typeof c.porFicha!=='object')c.porFicha={};
+ if(!c.iniciadoEm)c.iniciadoEm=new Date().toISOString();
+ return c;
+}
+function resumoCiclo(){
+ const c=garantirCiclo(db), percent=Math.min(100,Math.round(c.realizados/c.meta*100));
+ const nomes=[...new Set([...fichasVisiveis(),...Object.keys(c.porFicha).filter(k=>letras.includes(k)&&c.porFicha[k]>0)])];
+ return `<div class="card ciclo-card"><div class="row"><h2 style="margin:0">Ciclo de treinos</h2><span class="muted">${percent}%</span></div><div class="ciclo-numeros"><strong>${c.realizados}</strong><span class="muted">de ${c.meta} treinos concluídos</span></div><div class="ciclo-barra" role="progressbar" aria-label="Progresso do ciclo" aria-valuemin="0" aria-valuemax="${c.meta}" aria-valuenow="${Math.min(c.realizados,c.meta)}"><div style="width:${percent}%"></div></div><div class="ciclo-grade">${nomes.map(k=>`<div class="ciclo-mini"><small>Ficha ${k}</small><b>${Number(c.porFicha[k])||0}</b><small>treinos</small></div>`).join('')}</div>${c.realizados>=c.meta?'<p class="ciclo-aviso">✓ Meta atingida! É hora de revisar suas fichas. Você pode iniciar outro ciclo em Configurações.</p>':'<p class="muted">Cada treino finalizado conta uma vez. A meta é compartilhada entre as fichas.</p>'}</div>`;
+}
+function alterarMetaCiclo(){
+ const c=garantirCiclo(db), entrada=prompt('Meta TOTAL de treinos do ciclo (1 a 500):',String(c.meta));
+ if(entrada===null)return;
+ const n=Number(entrada);
+ if(!Number.isInteger(n)||n<1||n>500)return alert('Informe um número inteiro entre 1 e 500.');
+ c.meta=n;c.concluidoEm=c.realizados>=n?(c.concluidoEm||new Date().toISOString()):null;save();
+}
+function novoCiclo(){
+ if(sessao)return alert('Finalize o treino em andamento antes de iniciar outro ciclo.');
+ if(!confirm('Iniciar um novo ciclo de treinos? O contador voltará a zero, mas todo o histórico de treinos será preservado.'))return;
+ const meta=garantirCiclo(db).meta;
+ db.ciclo={...cicloPadrao(),meta};save();
+ alert('Novo ciclo iniciado! Histórico preservado.');
+}
 function render(){
+  document.getElementById('contadorCiclo').innerHTML=resumoCiclo();
   document.getElementById('seletorFichas').innerHTML=letras.map(k=>`<label class="${db.fichasAtivas.includes(k)?'ativa':''}"><input type="checkbox" ${db.fichasAtivas.includes(k)?'checked':''} onchange="alternarFicha('${k}',this.checked)">${k}</label>`).join('');
   document.getElementById('editarFicha').innerHTML=letras.map(k=>`<option value="${k}" ${k===ficha?'selected':''}>Ficha ${k} · ${db.fichas[k].length} exercícios${db.fichasAtivas.includes(k)?' · ativa':''}</option>`).join('');
   const ativas=fichasVisiveis();
@@ -494,7 +529,13 @@ const concluidos=sessao.exercicios.filter(podeProgredir);
 const concluiuFicha=sessao.ficha;
 const ordem=fichasVisiveis();
 if(ordem.includes(concluiuFicha))db.proximaFicha=ordem[(ordem.indexOf(concluiuFicha)+1)%ordem.length]||null;
+const ciclo=garantirCiclo(db);
+ciclo.realizados++;
+ciclo.porFicha[concluiuFicha]=(Number(ciclo.porFicha[concluiuFicha])||0)+1;
+const metaAtingida=ciclo.realizados===ciclo.meta;
+if(metaAtingida)ciclo.concluidoEm=new Date().toISOString();
 db.historico.unshift(sessao);sessao=null;skip();save();active();page('historico');
+if(metaAtingida)alert('Parabéns! Você concluiu '+ciclo.meta+' treinos neste ciclo. Revise suas fichas e inicie um novo ciclo em Configurações quando desejar.');
 if(concluidos.length){
   document.getElementById('resumoProgressao').innerHTML =
     '<div class="card"><h2>↗ Sugestões para o próximo treino</h2>'+
@@ -559,6 +600,7 @@ if(!Array.isArray(d.fichasAtivas))d.fichasAtivas=letras.slice(0,d.quantidadeFich
 d.fichasAtivas=[...new Set(d.fichasAtivas.filter(k=>letras.includes(k)))].sort((a,b)=>letras.indexOf(a)-letras.indexOf(b));
 if(!d.fichasAtivas.includes(d.proximaFicha))d.proximaFicha=d.fichasAtivas[0]||null;
 if(!d.subgrupos||typeof d.subgrupos!=='object')d.subgrupos=subgruposVazios();
+  garantirCiclo(d);
 if(confirm('Substituir seus dados atuais pelo backup?')){db=d;sessao=null;skip();save();active();page('inicio');alert('Backup restaurado! Se estiver conectado, aguarde a sincronização.')}
 }catch(e){alert('Não foi possível restaurar o backup.')}
 ev.target.value='';
@@ -581,7 +623,7 @@ const FIREBASE_CONFIG = {
   appId: "1:245842087831:web:60ac575dd54b8f097dfed2"
 };
 const chaveLocalAtual=()=>window.WorkoutCloud?.uid ? 'workout-training-user-'+window.WorkoutCloud.uid : 'ferro2';
-const novaBase=()=>({fichas:vazio(),historico:[],quantidadeFichas:5,fichasAtivas:letras.slice(0,5),proximaFicha:'A',subgrupos:subgruposVazios()});
+const novaBase=()=>({fichas:vazio(),historico:[],quantidadeFichas:5,fichasAtivas:letras.slice(0,5),proximaFicha:'A',subgrupos:subgruposVazios(),ciclo:cicloPadrao()});
 function normalizarBase(d){
   if(!d||typeof d!=='object'||!d.fichas||typeof d.fichas!=='object'||!Array.isArray(d.historico))return novaBase();
   letras.forEach(k=>{if(!Array.isArray(d.fichas[k]))d.fichas[k]=[]});
@@ -590,6 +632,7 @@ function normalizarBase(d){
   d.fichasAtivas=[...new Set(d.fichasAtivas.filter(k=>letras.includes(k)))].sort();
   if(!d.fichasAtivas.includes(d.proximaFicha))d.proximaFicha=d.fichasAtivas[0]||null;
   if(!d.subgrupos||typeof d.subgrupos!=='object')d.subgrupos=subgruposVazios();
+  garantirCiclo(d);
   return d;
 }
 const cloud={uid:null,auth:null,firestore:null,ref:null,rev:0,timer:null,busy:false,dirty:false,ready:false,loading:false,conflict:false};
