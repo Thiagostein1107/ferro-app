@@ -85,7 +85,8 @@ nav button{display:flex;flex-direction:column;align-items:center;justify-content
 .resumo-item b{font-size:13px;font-weight:750;display:block}
 .resumo-item small{display:block;color:var(--muted);font-size:11px;margin-top:3px}
 @media(max-width:430px){nav button{font-size:10px;letter-spacing:0}.nav-icon{width:19px;height:19px}.heading-symbol{width:29px;height:29px}.sport-icon{width:39px;height:39px}.muscle-emoji{font-size:25px}}
-/* Contador de ciclo 2.14 */
+/* Contador de ciclo 2.15 */
+.metas-grade{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 14px;margin:12px 0 16px}.metas-grade label{margin:4px 0 6px}
 .ciclo-card{border-color:rgba(199,255,53,.4)}.ciclo-numeros{display:flex;align-items:baseline;gap:8px;margin:9px 0}.ciclo-numeros strong{font-size:31px;color:var(--lime)}.ciclo-barra{height:11px;background:#10161a;border-radius:12px;overflow:hidden;border:1px solid #35443b}.ciclo-barra>div{height:100%;background:var(--lime);transition:width .2s}.ciclo-grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(70px,1fr));gap:8px;margin:13px 0}.ciclo-mini{padding:9px 5px;text-align:center;border:1px solid #38463d;background:#17231d;border-radius:10px}.ciclo-mini b{display:block;color:var(--lime);font-size:19px}.ciclo-mini small{color:var(--muted)}.ciclo-aviso{color:var(--lime);font-weight:800}
 </style>
 </head>
@@ -97,8 +98,8 @@ nav button{display:flex;flex-direction:column;align-items:center;justify-content
  </div>
 </div>
 <main>
-<div class="logo"><img src="./logo-workout.svg" alt="Logotipo Workout Training"><div class="brand-name"><strong>WORKOUT</strong><span>TRAINING</span></div><span class="brand-version">v2.14</span></div>
-<p class="muted">SEU TREINO. SUA EVOLUÇÃO. · VERSÃO 2.14</p>
+<div class="logo"><img src="./logo-workout.svg" alt="Logotipo Workout Training"><div class="brand-name"><strong>WORKOUT</strong><span>TRAINING</span></div><span class="brand-version">v2.15</span></div>
+<p class="muted">SEU TREINO. SUA EVOLUÇÃO. · VERSÃO 2.15</p>
 
 <section id="inicio" class="page on">
 <h1 class="heading-icon"><span class="sport-icon" aria-hidden="true"><span class="muscle-emoji">💪</span></span><span>Vamos treinar!</span></h1>
@@ -122,7 +123,7 @@ nav button{display:flex;flex-direction:column;align-items:center;justify-content
 <button class="alt" onclick="document.getElementById('file').click()">Restaurar</button>
 <input type="file" id="file" accept=".json" style="display:none" onchange="restore(event)">
 </div>
-<div class="card"><h2>Contador de treinos</h2><p class="muted">Defina a meta total do ciclo ou comece outro ciclo. Os treinos antigos continuam no histórico.</p><button class="alt" onclick="alterarMetaCiclo()">Alterar meta do ciclo</button> <button class="alt" onclick="novoCiclo()">Iniciar novo ciclo</button></div>
+<div class="card"><h2>Metas por ficha</h2><p class="muted">Escolha quantos treinos deseja realizar de cada ficha. A meta total é calculada automaticamente. Informe 0 para não incluir uma ficha no ciclo.</p><div id="metasPorFicha"></div><button class="full" onclick="salvarMetasFicha()">Salvar metas do ciclo</button><button class="alt full" onclick="novoCiclo()">Iniciar novo ciclo</button></div>
 </section>
 
 <section id="fichas" class="page">
@@ -282,38 +283,72 @@ function resumoFicha(k){
   if(!lista.length)return '<p class="muted">Esta ficha ainda não tem exercícios cadastrados.</p>';
   return `<div class="resumo-lista">${lista.map((e,i)=>`<div class="resumo-item"><span class="resumo-num">${i+1}</span><div><b>${safe(e.nome||'Exercício')}</b><small>${safe(e.series)} séries × ${safe(metaReps(e))} repetições · ${safe(e.descanso)}s de descanso</small></div></div>`).join('')}</div>`;
 }
-// O ciclo inicia em zero na primeira atualização; históricos anteriores permanecem intactos.
-function cicloPadrao(){return {meta:40,realizados:0,porFicha:{},iniciadoEm:new Date().toISOString(),concluidoEm:null}}
+// Ciclos anteriores e contagens existentes são preservados na migração.
+function cicloPadrao(){return {meta:40,realizados:0,porFicha:{},metasFicha:null,iniciadoEm:new Date().toISOString(),concluidoEm:null}}
+function distribuirMetas(total,nomes){
+ const metas={}; const validas=[...new Set(nomes.filter(k=>letras.includes(k)))];
+ const lista=validas.length?validas:['A'];
+ validas.forEach((k,i)=>metas[k]=Math.floor(total/lista.length)+(i<total%lista.length?1:0));
+ if(!validas.length)metas.A=total;
+ return metas;
+}
 function garantirCiclo(d){
- if(!d.ciclo||typeof d.ciclo!== 'object')d.ciclo=cicloPadrao();
+ if(!d.ciclo||typeof d.ciclo!=='object')d.ciclo=cicloPadrao();
  const c=d.ciclo;
  if(!Number.isInteger(c.meta)||c.meta<1||c.meta>500)c.meta=40;
  if(!Number.isInteger(c.realizados)||c.realizados<0)c.realizados=0;
  if(!c.porFicha||typeof c.porFicha!=='object')c.porFicha={};
+ if(!c.metasFicha||typeof c.metasFicha!=='object'){
+   // A antiga meta global é repartida entre as fichas ativas sem perder o progresso.
+   c.metasFicha=distribuirMetas(c.meta,d.fichasAtivas||[]);
+ }
+ for(const k of Object.keys(c.metasFicha)){
+   if(!letras.includes(k)||!Number.isInteger(c.metasFicha[k])||c.metasFicha[k]<0||c.metasFicha[k]>500)delete c.metasFicha[k];
+ }
+ const soma=Object.values(c.metasFicha).reduce((n,v)=>n+v,0);
+ if(soma<1)c.metasFicha=distribuirMetas(c.meta,d.fichasAtivas||[]);
+ c.meta=Object.values(c.metasFicha).reduce((n,v)=>n+v,0);
  if(!c.iniciadoEm)c.iniciadoEm=new Date().toISOString();
  return c;
 }
 function resumoCiclo(){
- const c=garantirCiclo(db), percent=Math.min(100,Math.round(c.realizados/c.meta*100));
- const nomes=[...new Set([...fichasVisiveis(),...Object.keys(c.porFicha).filter(k=>letras.includes(k)&&c.porFicha[k]>0)])];
- return `<div class="card ciclo-card"><div class="row"><h2 style="margin:0">Ciclo de treinos</h2><span class="muted">${percent}%</span></div><div class="ciclo-numeros"><strong>${c.realizados}</strong><span class="muted">de ${c.meta} treinos concluídos</span></div><div class="ciclo-barra" role="progressbar" aria-label="Progresso do ciclo" aria-valuemin="0" aria-valuemax="${c.meta}" aria-valuenow="${Math.min(c.realizados,c.meta)}"><div style="width:${percent}%"></div></div><div class="ciclo-grade">${nomes.map(k=>`<div class="ciclo-mini"><small>Ficha ${k}</small><b>${Number(c.porFicha[k])||0}</b><small>treinos</small></div>`).join('')}</div>${c.realizados>=c.meta?'<p class="ciclo-aviso">✓ Meta atingida! É hora de revisar suas fichas. Você pode iniciar outro ciclo em Configurações.</p>':'<p class="muted">Cada treino finalizado conta uma vez. A meta é compartilhada entre as fichas.</p>'}</div>`;
+ const c=garantirCiclo(db);
+ const nomes=[...new Set([...fichasVisiveis(),...Object.keys(c.metasFicha),...Object.keys(c.porFicha).filter(k=>letras.includes(k)&&c.porFicha[k]>0)])];
+ const atingidos=nomes.reduce((n,k)=>n+Math.min(Number(c.porFicha[k])||0,Number(c.metasFicha[k])||0),0);
+ const percent=Math.min(100,Math.round(atingidos/c.meta*100));
+ const concluido=nomes.every(k=>(Number(c.porFicha[k])||0)>=(Number(c.metasFicha[k])||0));
+ return `<div class="card ciclo-card"><div class="row"><h2 style="margin:0">Ciclo de treinos</h2><span class="muted">${percent}%</span></div><div class="ciclo-numeros"><strong>${atingidos}</strong><span class="muted">de ${c.meta} treinos da meta · ${c.realizados} realizados no ciclo</span></div><div class="ciclo-barra" role="progressbar" aria-label="Progresso do ciclo" aria-valuemin="0" aria-valuemax="${c.meta}" aria-valuenow="${atingidos}"><div style="width:${percent}%"></div></div><div class="ciclo-grade">${nomes.map(k=>`<div class="ciclo-mini"><small>Ficha ${k}</small><b>${Number(c.porFicha[k])||0} / ${Number(c.metasFicha[k])||0}</b><small>${(Number(c.metasFicha[k])||0)>0&&(Number(c.porFicha[k])||0)>=(Number(c.metasFicha[k])||0)?'✓ Meta atingida':'treinos'}</small></div>`).join('')}</div>${concluido?'<p class="ciclo-aviso">✓ Todas as metas foram atingidas! É hora de revisar suas fichas.</p>':'<p class="muted">Cada ficha tem sua própria meta. Ajuste em Configurações.</p>'}</div>`;
 }
-function alterarMetaCiclo(){
- const c=garantirCiclo(db), entrada=prompt('Meta TOTAL de treinos do ciclo (1 a 500):',String(c.meta));
- if(entrada===null)return;
- const n=Number(entrada);
- if(!Number.isInteger(n)||n<1||n>500)return alert('Informe um número inteiro entre 1 e 500.');
- c.meta=n;c.concluidoEm=c.realizados>=n?(c.concluidoEm||new Date().toISOString()):null;save();
+function renderMetasFicha(){
+ const c=garantirCiclo(db), el=document.getElementById('metasPorFicha');
+ if(!el)return;
+ const nomes=[...new Set([...fichasVisiveis(),...Object.keys(c.metasFicha).filter(k=>letras.includes(k))])].sort();
+ el.innerHTML='<div class="metas-grade">'+nomes.map(k=>`<div><label for="metaFicha${k}">Ficha ${k} · ${Number(c.porFicha[k])||0} feitos</label><input id="metaFicha${k}" class="meta-ficha-input" type="number" min="0" max="500" step="1" data-ficha="${k}" value="${Number(c.metasFicha[k])||0}"></div>`).join('')+'</div><p class="muted">As fichas ativas aparecem aqui. Metas de fichas desativadas são mantidas até você alterá-las.</p>';
+}
+function salvarMetasFicha(){
+ const c=garantirCiclo(db), metas={...c.metasFicha};
+ for(const input of document.querySelectorAll('.meta-ficha-input')){
+   const n=Number(input.value);
+   if(input.value.trim()===''||!Number.isInteger(n)||n<0||n>500)return alert('Informe valores inteiros entre 0 e 500 para cada ficha.');
+   metas[input.dataset.ficha]=n;
+ }
+ const total=Object.values(metas).reduce((n,v)=>n+v,0);
+ if(total<1||total>500)return alert('A soma das metas deve ficar entre 1 e 500 treinos.');
+ c.metasFicha=metas;c.meta=total;
+ const concluido=Object.keys(metas).every(k=>(Number(c.porFicha[k])||0)>=metas[k]);
+ c.concluidoEm=concluido?(c.concluidoEm||new Date().toISOString()):null;
+ save();alert('Metas salvas! Total do ciclo: '+total+' treinos.');
 }
 function novoCiclo(){
  if(sessao)return alert('Finalize o treino em andamento antes de iniciar outro ciclo.');
- if(!confirm('Iniciar um novo ciclo de treinos? O contador voltará a zero, mas todo o histórico de treinos será preservado.'))return;
- const meta=garantirCiclo(db).meta;
- db.ciclo={...cicloPadrao(),meta};save();
+ if(!confirm('Iniciar um novo ciclo? As metas por ficha serão mantidas, os contadores voltarão a zero e o histórico será preservado.'))return;
+ const atual=garantirCiclo(db);
+ db.ciclo={...cicloPadrao(),metasFicha:{...atual.metasFicha},meta:atual.meta};save();
  alert('Novo ciclo iniciado! Histórico preservado.');
 }
 function render(){
   document.getElementById('contadorCiclo').innerHTML=resumoCiclo();
+  renderMetasFicha();
   document.getElementById('seletorFichas').innerHTML=letras.map(k=>`<label class="${db.fichasAtivas.includes(k)?'ativa':''}"><input type="checkbox" ${db.fichasAtivas.includes(k)?'checked':''} onchange="alternarFicha('${k}',this.checked)">${k}</label>`).join('');
   document.getElementById('editarFicha').innerHTML=letras.map(k=>`<option value="${k}" ${k===ficha?'selected':''}>Ficha ${k} · ${db.fichas[k].length} exercícios${db.fichasAtivas.includes(k)?' · ativa':''}</option>`).join('');
   const ativas=fichasVisiveis();
@@ -532,10 +567,14 @@ if(ordem.includes(concluiuFicha))db.proximaFicha=ordem[(ordem.indexOf(concluiuFi
 const ciclo=garantirCiclo(db);
 ciclo.realizados++;
 ciclo.porFicha[concluiuFicha]=(Number(ciclo.porFicha[concluiuFicha])||0)+1;
-const metaAtingida=ciclo.realizados===ciclo.meta;
-if(metaAtingida)ciclo.concluidoEm=new Date().toISOString();
+const metaFicha=ciclo.metasFicha[concluiuFicha]||0;
+const atingiuFicha=metaFicha>0&&ciclo.porFicha[concluiuFicha]===metaFicha;
+const metaAtingida=Object.keys(ciclo.metasFicha).every(k=>(Number(ciclo.porFicha[k])||0)>=ciclo.metasFicha[k]);
+const primeiraConclusao=metaAtingida&&!ciclo.concluidoEm;
+if(primeiraConclusao)ciclo.concluidoEm=new Date().toISOString();
 db.historico.unshift(sessao);sessao=null;skip();save();active();page('historico');
-if(metaAtingida)alert('Parabéns! Você concluiu '+ciclo.meta+' treinos neste ciclo. Revise suas fichas e inicie um novo ciclo em Configurações quando desejar.');
+if(primeiraConclusao)alert('Parabéns! Você concluiu as metas de todas as fichas neste ciclo. Revise suas fichas e inicie um novo ciclo em Configurações quando desejar.');
+else if(atingiuFicha)alert('Meta da ficha '+concluiuFicha+' atingida: '+metaFicha+' treinos!');
 if(concluidos.length){
   document.getElementById('resumoProgressao').innerHTML =
     '<div class="card"><h2>↗ Sugestões para o próximo treino</h2>'+
