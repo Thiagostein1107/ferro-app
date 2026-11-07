@@ -69,7 +69,7 @@ body.access-granted #loginGate{display:none}
 #loginGate .card{padding:24px}#loginGate .auth-actions{display:grid;grid-template-columns:1fr 1fr}#loginGate .auth-actions button{min-width:0}
 #loginGate .auth-status{min-height:24px}#loginGate .auth-warning{line-height:1.5}
 
-/* Workout Training 2.13.1 — ícone esportivo redesenhado e subgrupo sem ícone */
+/* Workout Training 2.13.2 — ícone esportivo redesenhado e subgrupo sem ícone */
 .ui-icon{width:22px;height:22px;flex:none;color:var(--lime)}
 .heading-icon{display:flex;align-items:center;gap:11px}
 .heading-symbol{width:34px;height:34px;color:var(--lime);flex:none}
@@ -77,14 +77,14 @@ nav button{display:flex;flex-direction:column;align-items:center;justify-content
 .nav-icon{width:21px;height:21px;flex:none}
 .subgrupo-home{display:flex;align-items:center;gap:8px;color:#e9f8d7;font-size:15px;font-weight:800;margin:5px 0 10px!important}
 .sport-icon{width:42px;height:42px;display:grid;place-items:center;flex:none;border-radius:50%;background:rgba(199,255,53,.12);border:1px solid rgba(199,255,53,.23)}
-.sport-icon svg{width:28px;height:28px;color:var(--lime)}
+.muscle-emoji{font-size:27px;line-height:1;display:block;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
 .resumo-titulo{font-size:13px;letter-spacing:.3px;margin:19px 0 9px;color:#e8efeb}
 .resumo-lista{display:grid;gap:7px;margin-bottom:14px}
 .resumo-item{display:flex;align-items:flex-start;gap:10px;padding:10px;background:rgba(10,17,18,.5);border:1px solid rgba(134,159,145,.15);border-radius:10px}
 .resumo-num{width:23px;height:23px;flex:none;border-radius:8px;display:grid;place-items:center;background:rgba(199,255,53,.13);color:var(--lime);font-weight:850;font-size:12px}
 .resumo-item b{font-size:13px;font-weight:750;display:block}
 .resumo-item small{display:block;color:var(--muted);font-size:11px;margin-top:3px}
-@media(max-width:430px){nav button{font-size:10px;letter-spacing:0}.nav-icon{width:19px;height:19px}.heading-symbol{width:29px;height:29px}.sport-icon{width:39px;height:39px}.sport-icon svg{width:26px;height:26px}}
+@media(max-width:430px){nav button{font-size:10px;letter-spacing:0}.nav-icon{width:19px;height:19px}.heading-symbol{width:29px;height:29px}.sport-icon{width:39px;height:39px}.muscle-emoji{font-size:25px}}
 </style>
 </head>
 <body>
@@ -95,11 +95,11 @@ nav button{display:flex;flex-direction:column;align-items:center;justify-content
  </div>
 </div>
 <main>
-<div class="logo"><img src="./logo-workout.svg" alt="Logotipo Workout Training"><div class="brand-name"><strong>WORKOUT</strong><span>TRAINING</span></div><span class="brand-version">v2.13.1</span></div>
-<p class="muted">SEU TREINO. SUA EVOLUÇÃO. · VERSÃO 2.13.1</p>
+<div class="logo"><img src="./logo-workout.svg" alt="Logotipo Workout Training"><div class="brand-name"><strong>WORKOUT</strong><span>TRAINING</span></div><span class="brand-version">v2.13.2</span></div>
+<p class="muted">SEU TREINO. SUA EVOLUÇÃO. · VERSÃO 2.13.2</p>
 
 <section id="inicio" class="page on">
-<h1 class="heading-icon"><span class="sport-icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 37c2.5 4.5 8 6.5 14 4l12-5c5-2 8-6.5 7-12l-1.5-8c-.4-2-3.6-2.2-4.2-.1l-2.2 7.3c-3.5-4.7-8.6-6.5-13.2-4.5-4.4 1.9-6.2 6.5-5.1 11.1L9 30c-3.6.6-4.1 4-2 7Z"/><path d="M15 30c3.2-5.2 7.7-7.1 12.5-4.2 2.2 1.3 3.6 3.2 4.2 5.4"/><path d="M21 41c2.1-4.7 5.8-7.6 10.6-8.4"/><path d="M34 15l-1-4.1c-.5-2.1 2.6-3.2 3.7-1.2l1.8 6.3"/></svg></span><span>Vamos treinar!</span></h1>
+<h1 class="heading-icon"><span class="sport-icon" aria-hidden="true"><span class="muscle-emoji">💪</span></span><span>Vamos treinar!</span></h1>
 <div class="card">
 <h2 class="heading-icon"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4.5h6M9 9h6M9 13h6M9 17h4"/></svg><span>Minhas fichas</span></h2>
 <div id="home"></div>
