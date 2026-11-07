@@ -58,22 +58,29 @@ canvas{display:block;width:100%;height:auto;background:#10161b;border:1px solid 
 .seletor-fichas{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:14px}.seletor-fichas label{display:flex;align-items:center;justify-content:center;gap:7px;margin:0;padding:10px 3px;border:1px solid #3a454e;border-radius:11px;background:#141a1e;color:#f4f7f7;font-size:13px;letter-spacing:0;cursor:pointer}.seletor-fichas label.ativa{border-color:var(--lime);background:#29351f;color:var(--lime)}.seletor-fichas input{width:16px;min-height:16px;accent-color:var(--lime)}.progresso-atingido{margin-top:12px}.progressao{border:1px solid rgba(199,255,53,.5);background:linear-gradient(135deg,rgba(47,65,30,.95),rgba(25,37,29,.96));border-radius:14px;padding:13px 15px;margin:12px 0}.progressao b{color:var(--lime)}.progressao p{margin:5px 0 0;font-size:13px;color:#e2ebda}.progressao small{display:block;margin-top:5px;color:#b7c7ae}#registros>.card{padding:18px 20px}#registros>.card>b{color:var(--lime)}
 @media(max-width:430px){body{padding:22px 13px 110px}.card{padding:16px;border-radius:17px}h1{margin:23px 0 17px}.row{gap:7px}#inicio>.card>button{margin:4px 4px 4px 0}#home>.card{padding:13px}#home>.card button{padding:10px 12px}.set{gap:5px;grid-template-columns:22px minmax(0,1fr) minmax(0,1fr) 41px}.set input{padding:9px 3px}nav{bottom:9px;width:calc(100% - 18px)}nav button{font-size:10px;padding:11px 2px}.unit-row{gap:8px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+.auth-card{border-color:#566e32!important}.auth-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.auth-actions button{flex:1 1 140px}.auth-status{font-size:13px;color:var(--muted);margin-top:10px}.auth-status strong{color:var(--lime)}.auth-field{margin-top:10px}.auth-warning{color:#ffd58d;font-size:12px}.auth-card input{max-width:100%}
 </style>
 </head>
 <body>
 <main>
-<div class="logo"><img src="./logo-workout.svg" alt="Logotipo Workout Training"><div class="brand-name"><strong>WORKOUT</strong><span>TRAINING</span></div><span class="brand-version">v2.7</span></div>
-<p class="muted">SEU TREINO. SUA EVOLUÇÃO. · VERSÃO 2.7</p>
+<div class="logo"><img src="./logo-workout.svg" alt="Logotipo Workout Training"><div class="brand-name"><strong>WORKOUT</strong><span>TRAINING</span></div><span class="brand-version">v2.8</span></div>
+<p class="muted">SEU TREINO. SUA EVOLUÇÃO. · VERSÃO 2.8</p>
 
 <section id="inicio" class="page on">
+<div class="card auth-card" id="contaCard">
+<h2>☁ Minha conta</h2>
+<div id="authPanel"><p class="muted">Carregando acesso à nuvem…</p></div>
+<p class="auth-status" id="cloudStatus" role="status">Os treinos continuam salvos neste aparelho.</p>
+</div>
 <h1>Vamos treinar!</h1>
 <div class="card">
 <h2>Minhas fichas</h2>
 <div id="home"></div>
 </div>
 <div class="card">
-<h2>Backup dos dados</h2>
-<p class="muted">Salve suas fichas e histórico em um arquivo.</p>
+<h2>Backup de segurança</h2>
+<p class="muted">Recomendado mesmo com a nuvem, especialmente antes de migrar seus dados.</p>
 <button onclick="backup()">Exportar backup</button>
 <button class="alt" onclick="document.getElementById('file').click()">Restaurar</button>
 <input type="file" id="file" accept=".json" style="display:none" onchange="restore(event)">
@@ -143,7 +150,11 @@ if(!Array.isArray(db.fichasAtivas))db.fichasAtivas=letras.slice(0,db.quantidadeF
 db.fichasAtivas=[...new Set(db.fichasAtivas.filter(k=>letras.includes(k)))].sort((a,b)=>letras.indexOf(a)-letras.indexOf(b));
 if(!db.fichasAtivas.includes(db.proximaFicha))db.proximaFicha=db.fichasAtivas[0]||null;
 let ficha='A',sessao=null,restante=0,fim=0,intervalo=null,parado=false;
-function save(){localStorage.setItem('ferro2',JSON.stringify(db));render()}
+function save(){
+  localStorage.setItem(chaveLocalAtual(),JSON.stringify(db));
+  render();
+  if(window.WorkoutCloud)window.WorkoutCloud.agendar();
+}
 function unidade(e){return e.unidade==='lb'?'lb':'kg'}
 function faixaReps(valor){
   const texto=String(valor??'').trim().replace(/[–—]/g,'-');
@@ -497,13 +508,207 @@ if(!Number.isInteger(d.quantidadeFichas)||d.quantidadeFichas<1||d.quantidadeFich
 if(!Array.isArray(d.fichasAtivas))d.fichasAtivas=letras.slice(0,d.quantidadeFichas);
 d.fichasAtivas=[...new Set(d.fichasAtivas.filter(k=>letras.includes(k)))].sort((a,b)=>letras.indexOf(a)-letras.indexOf(b));
 if(!d.fichasAtivas.includes(d.proximaFicha))d.proximaFicha=d.fichasAtivas[0]||null;
-if(confirm('Substituir seus dados atuais pelo backup?')){db=d;sessao=null;skip();save();active();page('inicio');alert('Backup restaurado!')}
+if(confirm('Substituir seus dados atuais pelo backup?')){db=d;sessao=null;skip();save();active();page('inicio');alert('Backup restaurado! Se estiver conectado, aguarde a sincronização.')}
 }catch(e){alert('Não foi possível restaurar o backup.')}
 ev.target.value='';
 };
 r.readAsText(f);
 }
 render();active();
+</script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script>
+// Workout Training 2.8 — cada conta tem sua cópia local independente.
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAMzl7UbZy5Ziiq07I5e2sPQmrnY2sAKHY",
+  authDomain: "workout-training-173f9.firebaseapp.com",
+  projectId: "workout-training-173f9",
+  storageBucket: "workout-training-173f9.firebasestorage.app",
+  messagingSenderId: "245842087831",
+  appId: "1:245842087831:web:60ac575dd54b8f097dfed2"
+};
+const chaveLocalAtual=()=>window.WorkoutCloud?.uid ? 'workout-training-user-'+window.WorkoutCloud.uid : 'ferro2';
+const novaBase=()=>({fichas:vazio(),historico:[],quantidadeFichas:5,fichasAtivas:letras.slice(0,5),proximaFicha:'A'});
+function normalizarBase(d){
+  if(!d||typeof d!=='object'||!d.fichas||typeof d.fichas!=='object'||!Array.isArray(d.historico))return novaBase();
+  letras.forEach(k=>{if(!Array.isArray(d.fichas[k]))d.fichas[k]=[]});
+  if(!Number.isInteger(d.quantidadeFichas)||d.quantidadeFichas<1||d.quantidadeFichas>20)d.quantidadeFichas=5;
+  if(!Array.isArray(d.fichasAtivas))d.fichasAtivas=letras.slice(0,d.quantidadeFichas);
+  d.fichasAtivas=[...new Set(d.fichasAtivas.filter(k=>letras.includes(k)))].sort();
+  if(!d.fichasAtivas.includes(d.proximaFicha))d.proximaFicha=d.fichasAtivas[0]||null;
+  return d;
+}
+const cloud={uid:null,auth:null,firestore:null,ref:null,rev:0,timer:null,busy:false,dirty:false,ready:false,loading:false,conflict:false};
+window.WorkoutCloud=cloud;
+function cloudMessage(t){document.getElementById('cloudStatus').textContent=t}
+function authError(err){
+ const codes={
+ 'auth/invalid-email':'E-mail inválido.',
+ 'auth/invalid-credential':'E-mail ou senha incorretos.',
+ 'auth/email-already-in-use':'Este e-mail já está cadastrado.',
+ 'auth/weak-password':'Use uma senha mais forte (mínimo de 6 caracteres).',
+ 'auth/popup-closed-by-user':'A janela do Google foi fechada.',
+ 'auth/unauthorized-domain':'Autorize thiagostein1107.github.io no Firebase Authentication.',
+ 'auth/network-request-failed':'Falha de conexão. Tente novamente com internet.'
+ };
+ alert(codes[err?.code]||('Não foi possível autenticar: '+(err?.message||'erro desconhecido')));
+}
+function renderAuth(){
+ const el=document.getElementById('authPanel');
+ if(!cloud.auth){el.innerHTML='<p class="auth-warning">Sem conexão com o Firebase. Você ainda pode treinar localmente e exportar backup.</p>';return}
+ const user=cloud.auth.currentUser;
+ if(user){
+   el.innerHTML='<p class="muted">Conectado como <strong>'+safe(user.email||user.displayName||'Conta Google')+'</strong></p><div class="auth-actions"><button class="alt" onclick="sincronizarAgora()">Sincronizar agora</button><button class="alt" onclick="sairConta()">Sair da conta</button></div>';
+ }else{
+   el.innerHTML='<p class="muted">Entre para salvar suas fichas e histórico na nuvem.</p><div class="auth-field"><label for="authEmail">E-mail</label><input id="authEmail" type="email" autocomplete="email" placeholder="seu@email.com"><label for="authSenha">Senha</label><input id="authSenha" type="password" autocomplete="current-password" placeholder="Mínimo 6 caracteres"></div><div class="auth-actions"><button onclick="entrarEmail(false)">Entrar</button><button class="alt" onclick="entrarEmail(true)">Criar conta</button><button class="alt" onclick="entrarGoogle()">Entrar com Google</button></div>';
+ }
+}
+async function entrarEmail(criar){
+ const email=document.getElementById('authEmail')?.value.trim();
+ const senha=document.getElementById('authSenha')?.value;
+ if(!email||!senha)return alert('Informe e-mail e senha.');
+ try{if(criar)await cloud.auth.createUserWithEmailAndPassword(email,senha);else await cloud.auth.signInWithEmailAndPassword(email,senha)}catch(e){authError(e)}
+}
+async function entrarGoogle(){
+ try{await cloud.auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())}
+ catch(e){
+   if(['auth/popup-blocked','auth/operation-not-supported-in-this-environment'].includes(e.code)){
+     if(confirm('O navegador bloqueou a janela. Tentar login por redirecionamento?')){
+       try{await cloud.auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider())}catch(ex){authError(ex)}
+     }
+   }else authError(e);
+ }
+}
+async function sairConta(){
+ if(sessao)return alert('Finalize o treino em andamento antes de sair.');
+ if(cloud.dirty||cloud.busy)return alert('Há dados aguardando sincronização. Conecte-se à internet e sincronize antes de sair.');
+ if(!confirm('Sair da conta? Os dados locais dessa conta serão preservados neste aparelho.'))return;
+ await cloud.auth.signOut();
+}
+function dadosLocaisRelevantes(d){return !!(d&&((d.historico?.length||0)>0||Object.values(d.fichas||{}).some(a=>Array.isArray(a)&&a.length>0)))}
+async function mudarUsuario(user){
+ clearTimeout(cloud.timer);
+ if(sessao){sessao=null;skip();active()}
+ cloud.ready=false;cloud.loading=true;cloud.conflict=false;cloud.dirty=false;cloud.rev=0;
+ cloud.uid=user?.uid||null;
+ cloud.ref=user?cloud.firestore.collection('usuarios').doc(user.uid).collection('dados').doc('principal'):null;
+ if(!user){db=normalizarBase(JSON.parse(localStorage.getItem('ferro2')||'null'));cloud.loading=false;render();active();renderAuth();cloudMessage('Modo local: seus treinos estão apenas neste aparelho.');return}
+ renderAuth();cloudMessage('Carregando seus dados da nuvem…');
+ let local=null;
+ try{local=JSON.parse(localStorage.getItem(chaveLocalAtual())||'null')}catch(e){}
+ try{
+   const snap=await cloud.ref.get({source:'server'});
+   if(cloud.uid!==user.uid)return;
+   if(snap.exists){
+     const payload=snap.data();cloud.rev=payload.rev||0;
+     if(local&&localStorage.getItem('workout-training-pending-'+user.uid)==='1'){
+       db=normalizarBase(local);cloud.conflict=true;
+       localStorage.setItem(chaveLocalAtual(),JSON.stringify(db));
+       cloudMessage('Atenção: há alterações locais pendentes. Resolva o conflito antes de sincronizar.');
+       setTimeout(()=>resolverConflito(),100);
+     }else{
+       db=normalizarBase(payload.treino);
+       localStorage.setItem(chaveLocalAtual(),JSON.stringify(db));
+       cloudMessage('✓ Dados carregados da nuvem.');
+     }
+   }else{
+     let guest=null;try{guest=JSON.parse(localStorage.getItem('ferro2')||'null')}catch(e){}
+     if(local&&dadosLocaisRelevantes(local)){
+       db=normalizarBase(local);
+       cloud.dirty=true;
+     }else if(dadosLocaisRelevantes(guest)&&confirm('Encontramos seus treinos antigos neste aparelho. Deseja importar as fichas e o histórico para esta conta?\n\nEscolha OK para importar ou Cancelar para começar com fichas vazias.')){
+       db=normalizarBase(structuredClone(guest));cloud.dirty=true;
+     }else{db=novaBase();cloud.dirty=true}
+     localStorage.setItem(chaveLocalAtual(),JSON.stringify(db));
+   }
+   cloud.ready=true;cloud.loading=false;render();active();renderAuth();
+   if(cloud.dirty&&!cloud.conflict)await enviarNuvem();
+ }catch(e){
+   cloud.loading=false;db=normalizarBase(local);
+   cloud.ready=true;cloud.dirty=true;
+   render();active();renderAuth();
+   cloudMessage('Sem acesso à nuvem. Dados salvos neste aparelho; sincronize quando a internet voltar.');
+ }
+}
+cloud.agendar=function(){
+ if(!cloud.uid||!cloud.ready)return;
+ cloud.dirty=true;
+ localStorage.setItem('workout-training-pending-'+cloud.uid,'1');
+ cloudMessage('Alterações salvas neste aparelho. Aguardando sincronização…');
+ clearTimeout(cloud.timer);
+ cloud.timer=setTimeout(()=>enviarNuvem(),900);
+};
+async function enviarNuvem(){
+ if(!cloud.uid||!cloud.ready||cloud.busy||cloud.conflict||!navigator.onLine)return;
+ cloud.busy=true;
+ const uid=cloud.uid,rev=cloud.rev,conteudo=JSON.parse(JSON.stringify(db));
+ try{
+   let novoRev;
+   await cloud.firestore.runTransaction(async tx=>{
+     const snap=await tx.get(cloud.ref);
+     const atual=snap.exists?(snap.data().rev||0):0;
+     if(atual!==rev)throw new Error('CONFLITO');
+     novoRev=atual+1;
+     tx.set(cloud.ref,{rev:novoRev,treino:conteudo,atualizadoEm:firebase.firestore.FieldValue.serverTimestamp()});
+   });
+   if(uid!==cloud.uid)return;
+   cloud.rev=novoRev;
+   if(JSON.stringify(db)===JSON.stringify(conteudo)){
+     cloud.dirty=false;localStorage.removeItem('workout-training-pending-'+uid);
+     cloudMessage('✓ Tudo sincronizado com a nuvem.');
+   }else{
+     cloud.dirty=true;cloud.retryAfterBusy=true;
+   }
+ }catch(e){
+   if(e.message==='CONFLITO'){
+     cloud.conflict=true;
+     cloudMessage('Conflito entre dispositivos. Escolha qual versão manter.');
+     setTimeout(()=>resolverConflito(),100);
+   }else cloudMessage('Sem sincronização no momento. Seus dados permanecem salvos neste aparelho.');
+ }finally{
+   cloud.busy=false;
+   if(cloud.dirty&&!cloud.conflict&&navigator.onLine&&cloud.retryAfterBusy){
+     cloud.retryAfterBusy=false;
+     clearTimeout(cloud.timer);
+     cloud.timer=setTimeout(()=>enviarNuvem(),1000);
+   }
+ }
+}
+async function resolverConflito(){
+ if(!cloud.conflict||!cloud.uid)return;
+ const manterLocal=confirm('Há alterações diferentes na nuvem e neste aparelho.\n\nOK = manter os dados DESTE aparelho (substitui a nuvem).\nCancelar = carregar os dados da NUVEM (substitui os dados desta conta no aparelho).\n\nAntes de decidir, exporte um backup se tiver dúvidas.');
+ if(!navigator.onLine){alert('Conecte-se à internet para resolver o conflito.');return}
+ try{
+   const snap=await cloud.ref.get({source:'server'});
+   cloud.rev=snap.exists?(snap.data().rev||0):0;
+   if(manterLocal){cloud.conflict=false;cloud.dirty=true;await enviarNuvem()}
+   else{
+     db=normalizarBase(snap.exists?snap.data().treino:novaBase());
+     localStorage.setItem(chaveLocalAtual(),JSON.stringify(db));
+     localStorage.removeItem('workout-training-pending-'+cloud.uid);
+     cloud.conflict=false;cloud.dirty=false;render();active();cloudMessage('✓ Dados da nuvem carregados.');
+   }
+ }catch(e){cloudMessage('Não foi possível resolver agora. Tente novamente com internet.')}
+}
+async function sincronizarAgora(){
+ if(!cloud.uid)return;
+ if(cloud.conflict)return resolverConflito();
+ if(!navigator.onLine)return alert('Conecte-se à internet.');
+ if(cloud.dirty)return enviarNuvem();
+ cloudMessage('✓ Tudo sincronizado com a nuvem.');
+}
+window.addEventListener('online',()=>{if(cloud.dirty&&!cloud.conflict)enviarNuvem()});
+try{
+ if(!window.firebase)throw Error('Biblioteca Firebase indisponível');
+ firebase.initializeApp(FIREBASE_CONFIG);
+ cloud.auth=firebase.auth();cloud.firestore=firebase.firestore();
+ cloud.auth.onAuthStateChanged(user=>mudarUsuario(user).catch(e=>{console.error(e);cloudMessage('Erro ao carregar a conta. Exporte um backup antes de alterar dados.')}));
+ cloud.auth.getRedirectResult().catch(authError);
+ renderAuth();
+}catch(e){console.error('Firebase:',e);renderAuth();cloudMessage('Modo local. Para entrar, conecte-se à internet e recarregue a página.');}
+
 </script>
 <script>
 if ('serviceWorker' in navigator) {
