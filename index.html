@@ -88,6 +88,9 @@ nav button{display:flex;flex-direction:column;align-items:center;justify-content
 /* Contador de ciclo 2.15 */
 .metas-grade{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 14px;margin:12px 0 16px}.metas-grade label{margin:4px 0 6px}
 .ciclo-card{border-color:rgba(199,255,53,.4)}.ciclo-numeros{display:flex;align-items:baseline;gap:8px;margin:9px 0}.ciclo-numeros strong{font-size:31px;color:var(--lime)}.ciclo-barra{height:11px;background:#10161a;border-radius:12px;overflow:hidden;border:1px solid #35443b}.ciclo-barra>div{height:100%;background:var(--lime);transition:width .2s}.ciclo-grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(70px,1fr));gap:8px;margin:13px 0}.ciclo-mini{padding:9px 5px;text-align:center;border:1px solid #38463d;background:#17231d;border-radius:10px}.ciclo-mini b{display:block;color:var(--lime);font-size:19px}.ciclo-mini small{color:var(--muted)}.ciclo-aviso{color:var(--lime);font-weight:800}
+
+/* Assinatura discreta ao final de cada tela */
+.app-credit{margin:34px 0 10px;text-align:center;font-size:12px;font-weight:500;letter-spacing:.3px;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -98,8 +101,8 @@ nav button{display:flex;flex-direction:column;align-items:center;justify-content
  </div>
 </div>
 <main>
-<div class="logo"><img src="./logo-workout.svg" alt="Logotipo Workout Training"><div class="brand-name"><strong>WORKOUT</strong><span>TRAINING</span></div><span class="brand-version">v2.15</span></div>
-<p class="muted">SEU TREINO. SUA EVOLUÇÃO. · VERSÃO 2.15</p>
+<div class="logo"><img src="./logo-workout.svg" alt="Logotipo Workout Training"><div class="brand-name"><strong>WORKOUT</strong><span>TRAINING</span></div><span class="brand-version">v2.16</span></div>
+<p class="muted">SEU TREINO. SUA EVOLUÇÃO. · VERSÃO 2.16</p>
 
 <section id="inicio" class="page on">
 <h1 class="heading-icon"><span class="sport-icon" aria-hidden="true"><span class="muscle-emoji">💪</span></span><span>Vamos treinar!</span></h1>
@@ -107,6 +110,7 @@ nav button{display:flex;flex-direction:column;align-items:center;justify-content
 <h2 class="heading-icon"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4.5h6M9 9h6M9 13h6M9 17h4"/></svg><span>Minhas fichas</span></h2>
 <div id="home"></div><div id="contadorCiclo"></div>
 </div>
+<footer class="app-credit">Criado por Thiago Stein</footer>
 </section>
 
 <section id="configuracoes" class="page">
@@ -124,6 +128,7 @@ nav button{display:flex;flex-direction:column;align-items:center;justify-content
 <input type="file" id="file" accept=".json" style="display:none" onchange="restore(event)">
 </div>
 <div class="card"><h2>Metas por ficha</h2><p class="muted">Escolha quantos treinos deseja realizar de cada ficha. A meta total é calculada automaticamente. Informe 0 para não incluir uma ficha no ciclo.</p><div id="metasPorFicha"></div><button class="full" onclick="salvarMetasFicha()">Salvar metas do ciclo</button><button class="alt full" onclick="novoCiclo()">Iniciar novo ciclo</button></div>
+<footer class="app-credit">Criado por Thiago Stein</footer>
 </section>
 
 <section id="fichas" class="page">
@@ -131,6 +136,7 @@ nav button{display:flex;flex-direction:column;align-items:center;justify-content
 <div class="card"><h2>Fichas ativas</h2><p class="muted">Marque quais fichas devem aparecer no início. As demais continuam salvas e podem ser editadas.</p><div id="seletorFichas" class="seletor-fichas"></div></div>
 <div class="card"><label for="editarFicha">Editar ficha</label><select id="editarFicha" onchange="ficha=this.value;render()"></select></div>
 <div id="editor"></div>
+<footer class="app-credit">Criado por Thiago Stein</footer>
 </section>
 
 <section id="treinar" class="page">
@@ -146,6 +152,7 @@ nav button{display:flex;flex-direction:column;align-items:center;justify-content
 </div>
 </div>
 <button class="full" onclick="finish()">FINALIZAR TREINO</button>
+<footer class="app-credit">Criado por Thiago Stein</footer>
 </section>
 
 <section id="historico" class="page">
@@ -163,6 +170,7 @@ nav button{display:flex;flex-direction:column;align-items:center;justify-content
 <p class="muted">Zere os treinos anteriores, gráficos e cargas registradas. Suas fichas e a seleção de fichas ativas serão mantidas. Faça um backup antes.</p>
 <button class="red full" onclick="zerarEvolucao()">ZERAR EVOLUÇÃO</button>
 </div>
+<footer class="app-credit">Criado por Thiago Stein</footer>
 </section>
 
 <nav>
